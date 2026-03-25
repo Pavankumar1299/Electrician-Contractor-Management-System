@@ -2,23 +2,63 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from .models import User, Electrician, Job, Task
 import json
-
 from django.views.decorators.csrf import csrf_exempt
 
 
-# Home
-def home(request):
-    return JsonResponse({"message": "Backend Running"})
+# -------------------- PAGE VIEWS (HTML) --------------------
+
+def home_page(request):
+    return render(request, "index.html")
 
 
-# Register
-#                           <------ type your code here
+def dashboard_page(request):
 
-# Login
-#                           <------ type your code here
+    # protect route
+    # if not request.session.get('user'):
+    #     return redirect("/")
 
-# Dashboard
-def dashboard(request):
+    return render(request, "dashboard.html")
+
+
+def electricians_page(request):
+
+    # if not request.session.get('user'):
+    #     return redirect("/")
+
+    return render(request, "electricians.html")
+
+
+def jobs_page(request):
+
+    # if not request.session.get('user'):
+    #     return redirect("/")
+
+    return render(request, "jobs.html")
+
+
+def tasks_page(request):
+
+    # if not request.session.get('user'):
+    #     return redirect("/")
+
+    return render(request, "tasks.html")
+
+
+# -------------------- AUTH (HTML FLOW) --------------------
+
+    # type your code here
+
+
+
+# ---------------- LOGOUT ----------------
+def logout(request):
+    request.session.flush()
+    return redirect("/")
+
+
+# -------------------- API (JSON for fetch/Postman) --------------------
+
+def dashboard_api(request):
     electricians = list(Electrician.objects.values())
     jobs = list(Job.objects.values())
     tasks = list(Task.objects.values())
@@ -29,19 +69,21 @@ def dashboard(request):
         "tasks": tasks
     })
 
+
 @csrf_exempt
 def add_electrician(request):
     if request.method == "POST":
         data = json.loads(request.body)
 
-        electrician = Electrician.objects.create(
+        Electrician.objects.create(
             name=data.get("name"),
             phone=data.get("phone"),
             experience=data.get("experience")
         )
 
         return JsonResponse({"message": "Electrician added"})
-    
+
+
 @csrf_exempt
 def add_job(request):
     if request.method == "POST":
@@ -56,7 +98,8 @@ def add_job(request):
         )
 
         return JsonResponse({"message": "Job added"})
-    
+
+
 @csrf_exempt
 def add_task(request):
     if request.method == "POST":
