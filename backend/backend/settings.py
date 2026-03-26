@@ -37,10 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< HEAD
+
     'rest_framework',
-=======
->>>>>>> 76153a2364c5b2ada1e11581726e99d53f9e84a6
+
 
     'core'
 ]
@@ -129,7 +128,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-<<<<<<< HEAD
+
 from datetime import timedelta
 
 REST_FRAMEWORK = {
@@ -141,5 +140,3 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
 }
-=======
->>>>>>> 76153a2364c5b2ada1e11581726e99d53f9e84a6

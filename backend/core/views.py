@@ -3,14 +3,12 @@ from django.http import JsonResponse
 from .models import User, Electrician, Job, Task
 import json
 from django.views.decorators.csrf import csrf_exempt
-<<<<<<< HEAD
+
 from django.shortcuts import render
 
 def login_page(request):
     return render(request, 'login.html')
-=======
 
->>>>>>> 76153a2364c5b2ada1e11581726e99d53f9e84a6
 
 # -------------------- PAGE VIEWS (HTML) --------------------
 
