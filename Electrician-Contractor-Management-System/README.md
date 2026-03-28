@@ -1,3 +1,0 @@
-# Electrician Contractor Management System
-
-Electrician Contractor Management System – Frontend UI for a real-time project. This repository contains the responsive user interface for managing electricians, jobs, tasks, materials, and reports through a clean dashboard. Built using HTML, CSS, JavaScript, and optional Bootstrap, the system focuses on intuitive navigation and a modern UI that will later integrate with backend services and a database.
