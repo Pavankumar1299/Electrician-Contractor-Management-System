@@ -19,20 +19,23 @@ from . import views
 
 urlpatterns = [
     # Pages
-    path('', views.home_page),
-    path('dashboard/', views.dashboard_page),
-    path('electricians/', views.electricians_page),
-    path('jobs/', views.jobs_page),
-    path('tasks/', views.tasks_page),
+    path('', views.home_page, name='home'),
+    path('dashboard/', views.dashboard_page, name='dashboard'),  # <-- Fixed!
+    path('electricians/', views.electricians_page, name='electricians'),
+    path('jobs/', views.jobs_page, name='jobs'),
+    path('tasks/', views.tasks_page, name='tasks'),
+    path('materials/', views.materials_page, name='materials'),
+    path('profile/', views.profile_page, name='profile'),
+    path('reports/', views.reports_page, name='reports'),
 
     # Auth
-    # path('register/', views.register),
-    # path('login/', views.login),
-    path('logout/', views.logout),
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
 
     # API
-    path('api/dashboard/', views.dashboard_api),
-    path('api/add-electrician/', views.add_electrician),
-    path('api/add-job/', views.add_job),
-    path('api/add-task/', views.add_task),
+    path('api/dashboard/', views.dashboard_api, name='api_dashboard'),
+    path('api/add-electrician/', views.add_electrician, name='api_add_electrician'),
+    path('api/add-job/', views.add_job, name='api_add_job'),
+    path('api/add-task/', views.add_task, name='api_add_task'),
 ]
