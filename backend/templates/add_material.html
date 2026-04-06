@@ -29,6 +29,7 @@
 <div class="mb-3">
 <label>Select Job</label>
 <select name="job" class="form-control" required>
+<option value="" disabled selected>-- Select --</option>
 {% for job in jobs %}
 <option value="{{ job.id }}">{{ job.title }}</option>
 {% endfor %}

@@ -28,8 +28,8 @@
 
 <div class="mb-3">
 <label>Assign Electrician</label>
-<select name="electrician" class="form-control">
-<option value="">-- Select --</option>
+<select name="electrician" class="form-control" required>
+<option value="" disabled selected>-- Select --</option>
 {% for e in electricians %}
 <option value="{{ e.id }}">{{ e.name }}</option>
 {% endfor %}

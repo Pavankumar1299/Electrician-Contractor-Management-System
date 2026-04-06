@@ -19,7 +19,7 @@
 <div class="mb-3">
 <label>Select Job</label>
 <select name="job" class="form-control" required>
-<option value="">-- Select --</option>
+<option value="" disabled selected>-- Select --</option>
 {% for job in jobs %}
 <option value="{{ job.id }}">{{ job.title }}</option>
 {% endfor %}
@@ -28,8 +28,8 @@
 
 <div class="mb-3">
 <label>Assign Electrician</label>
-<select name="electrician" class="form-control">
-<option value="">-- Select --</option>
+<select name="electrician" class="form-control" required>
+<option value="" disabled selected>-- Select --</option>
 {% for e in electricians %}
 <option value="{{ e.id }}">{{ e.name }}</option>
 {% endfor %}

@@ -1,14 +1,11 @@
 from django.shortcuts import get_object_or_404, redirect, render
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
 from .models import Electrician, Job, Task, Material # Removed User from here to use default auth User
 from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
-import json
 from functools import wraps
 
 # -------------------- SECURITY DECORATOR --------------------
@@ -38,11 +35,6 @@ def jwt_cookie_required(view_func):
 
 def home_page(request):
     return render(request, "index.html")
-
-@jwt_cookie_required
-def dashboard_page(request):
-    # This page is now locked down!
-    return render(request, "dashboard.html")
 
 @jwt_cookie_required
 def electricians_page(request):
@@ -155,15 +147,25 @@ def logout_view(request):
 # -------------------- API (JSON for fetch/Postman) --------------------
 # ... (Keep your API views exactly as they were) ...
 
+@jwt_cookie_required
 def dashboard_view(request):
-    from .models import Electrician, Job, Task
+    total_tasks = Task.objects.count()
+    completed_tasks = Task.objects.filter(status='Completed').count()
+
+    completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+
 
     context = {
         'electricians_count': Electrician.objects.count(),
         'jobs_count': Job.objects.count(),
         'tasks_count': Task.objects.count(),
+
+        'pending_tasks': Task.objects.filter(status='Pending').count(),
+        'in_progress_tasks': Task.objects.filter(status='In Progress').count(),
+        'completed_tasks': Task.objects.filter(status='Completed').count(),
+
+        'completion_rate': round(completion_rate, 2)
     }
-    print("Dashboard data:", context)  # Debugging line
     return render(request, 'dashboard.html', context)
 
 def electricians_view(request):
@@ -351,3 +353,4 @@ def delete_material(request, id):
         return redirect('materials')
 
     return render(request, 'delete_material.html', {'material': material})
+

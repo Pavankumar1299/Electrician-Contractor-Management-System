@@ -28,7 +28,8 @@
 
 <div class="mb-3">
 <label>Job</label>
-<select name="job" class="form-control">
+<select name="job" class="form-control" required>
+<option value="" disabled selected>-- Select --</option>
 {% for job in jobs %}
 <option value="{{ job.id }}" 
 {% if material.job.id == job.id %}selected{% endif %}>
