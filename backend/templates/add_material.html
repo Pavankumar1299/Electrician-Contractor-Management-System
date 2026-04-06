@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h3>Add Material</h3>
+
+<form method="POST">
+{% csrf_token %}
+
+<div class="mb-3">
+<label>Name</label>
+<input type="text" name="name" class="form-control" required>
+</div>
+
+<div class="mb-3">
+<label>Total Quantity</label>
+<input type="number" name="quantity" class="form-control" required>
+</div>
+
+<div class="mb-3">
+<label>Unit</label>
+<input type="text" name="unit" class="form-control" placeholder="kg, pcs, meters" required>
+</div>
+
+<div class="mb-3">
+<label>Used Quantity</label>
+<input type="number" name="used_quantity" class="form-control" value="0">
+</div>
+
+<div class="mb-3">
+<label>Select Job</label>
+<select name="job" class="form-control" required>
+{% for job in jobs %}
+<option value="{{ job.id }}">{{ job.title }}</option>
+{% endfor %}
+</select>
+</div>
+
+<button class="btn btn-success">Save</button>
+
+</form>
+
+{% endblock %}

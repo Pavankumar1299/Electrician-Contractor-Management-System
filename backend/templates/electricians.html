@@ -1,54 +1,11 @@
-{% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-<title>ECMS Dashboard</title>
+{% extends 'base.html' %}
+{% block content %}
 
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
-</head>
-
-<body>
-
-<div class="d-flex">
-
-<!-- Sidebar -->
-<div class="sidebar text-white p-3">
-
-<h4 class="text-center">ECMS</h4>
-<hr>
-
-<a href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-<a href="{% url 'electricians' %}"><i class="bi bi-person-workspace"></i> Electricians</a>
-<a href="{% url 'jobs' %}"><i class="bi bi-briefcase"></i> Jobs</a>
-<a href="{% url 'tasks' %}"><i class="bi bi-list-task"></i> Tasks</a>
-<a href="{% url 'materials' %}"><i class="bi bi-box-seam"></i> Materials</a>
-<a href="{% url 'reports' %}"><i class="bi bi-bar-chart"></i> Reports</a>
-<a href="{% url 'profile' %}"><i class="bi bi-person"></i> Profile</a>
-
-<a href="{% url 'logout' %}" class="nav-link text-danger p-3">
-    <i class="bi bi-box-arrow-right"></i> Logout
-</a>
-</div>
-
-<!-- Main Content -->
-<div class="flex-grow-1">
-
-<!-- Top Navbar -->
-<nav class="navbar navbar-light bg-white shadow-sm px-4">
-<span class="navbar-brand mb-0 h5">Electrician Contractor Management System</span>
-</nav>
-
-<div class="container-fluid p-4">
-
-<!-- PAGE CONTENT START -->
 <h3>Electricians</h3>
 
-<button class="btn btn-primary mb-3">Add Electrician</button>
+<a href="{% url 'add_electrician' %}" class="btn btn-primary mb-3">
+    Add Electrician
+</a>
 
 <table class="table table-striped">
 
@@ -57,32 +14,42 @@
 <th>Name</th>
 <th>Phone</th>
 <th>Email</th>
+<th>Experience (years)</th>
 <th>Action</th>
 </tr>
 </thead>
 
 <tbody>
+
+{% for electrician in electricians %}
 <tr>
-<td>Ravi</td>
-<td>9876543210</td>
-<td>ravi@email.com</td>
+<td>{{ electrician.name }}</td>
+<td>{{ electrician.phone }}</td>
+<td>{{ electrician.email }}</td>
+<td>{{ electrician.experience }}</td>
+
 <td>
-<button class="btn btn-sm btn-warning">Edit</button>
-<button class="btn btn-sm btn-danger">Delete</button>
+<a href="{% url 'edit_electrician' electrician.id %}" 
+   class="btn btn-sm btn-warning">
+   Edit
+</a>
+
+<a href="{% url 'delete_electrician' electrician.id %}" 
+   class="btn btn-sm btn-danger">
+   Delete
+</a>
 </td>
+
 </tr>
+
+{% empty %}
+<tr>
+<td colspan="4" class="text-center">No electricians found</td>
+</tr>
+{% endfor %}
+
 </tbody>
 
 </table>
-<!-- PAGE CONTENT END -->
 
-</div>
-
-</div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
+{% endblock %}

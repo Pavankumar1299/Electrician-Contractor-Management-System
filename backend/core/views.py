@@ -1,6 +1,7 @@
+from django.shortcuts import get_object_or_404, redirect, render
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
-from .models import Electrician, Job, Task # Removed User from here to use default auth User
+from .models import Electrician, Job, Task, Material # Removed User from here to use default auth User
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
@@ -49,15 +50,18 @@ def electricians_page(request):
 
 @jwt_cookie_required
 def jobs_page(request):
-    return render(request, "jobs.html")
+    jobs = Job.objects.select_related('electrician').all()
+    return render(request, 'jobs.html', {'jobs': jobs})
 
 @jwt_cookie_required
 def tasks_page(request):
-    return render(request, "tasks.html")
+    tasks = Task.objects.select_related('job', 'electrician').all()
+    return render(request, 'tasks.html', {'tasks': tasks})
 
 @jwt_cookie_required
 def materials_page(request):
-    return render(request, "materials.html")
+    materials = Material.objects.select_related('job').all()
+    return render(request, 'materials.html', {'materials': materials})
 
 @jwt_cookie_required
 def profile_page(request):
@@ -151,110 +155,199 @@ def logout_view(request):
 # -------------------- API (JSON for fetch/Postman) --------------------
 # ... (Keep your API views exactly as they were) ...
 
-def dashboard_api(request):
+def dashboard_view(request):
+    from .models import Electrician, Job, Task
 
-    electricians = list(Electrician.objects.values())
+    context = {
+        'electricians_count': Electrician.objects.count(),
+        'jobs_count': Job.objects.count(),
+        'tasks_count': Task.objects.count(),
+    }
+    print("Dashboard data:", context)  # Debugging line
+    return render(request, 'dashboard.html', context)
 
-    jobs = list(Job.objects.values())
-
-    tasks = list(Task.objects.values())
-
-
-
-    return JsonResponse({
-
-        "electricians": electricians,
-
-        "jobs": jobs,
-
-        "tasks": tasks
-
+def electricians_view(request):
+    electricians = Electrician.objects.all()
+    print(electricians)
+    return render(request, 'electricians.html', {
+        'electricians': electricians
     })
 
-@csrf_exempt
-
 def add_electrician(request):
-
-    if request.method == "POST":
-
-        data = json.loads(request.body)
-
-
-
+    if request.method == 'POST':
         Electrician.objects.create(
-
-            name=data.get("name"),
-
-            phone=data.get("phone"),
-
-            experience=data.get("experience")
-
+            name=request.POST['name'],
+            phone=request.POST['phone'],
+            email=request.POST['email'],
+            experience=request.POST['experience']
         )
+        return redirect('electricians')
 
+    return render(request, 'add_electrician.html')
 
+def edit_electrician(request, id):
+    electrician = get_object_or_404(Electrician, id=id)
 
-        return JsonResponse({"message": "Electrician added"})
+    if request.method == 'POST':
+        electrician.name = request.POST['name']
+        electrician.phone = request.POST['phone']
+        electrician.email = request.POST['email']
+        electrician.experience = request.POST['experience']
+        electrician.save()
 
+        return redirect('electricians')
 
+    return render(request, 'edit_electrician.html', {
+        'electrician': electrician
+    })
 
+def delete_electrician(request, id):
+    electrician = get_object_or_404(Electrician, id=id)
 
+    if request.method == 'POST':
+        electrician.delete()
+        return redirect('electricians')
 
-@csrf_exempt
+    return render(request, 'delete_electrician.html', {
+        'electrician': electrician
+    })
 
 def add_job(request):
+    electricians = Electrician.objects.all()
 
-    if request.method == "POST":
-
-        data = json.loads(request.body)
-
-
-
-        electrician = Electrician.objects.get(id=data.get("electrician_id"))
-
-
+    if request.method == 'POST':
+        electrician_id = request.POST.get('electrician')
 
         Job.objects.create(
-
-            title=data.get("title"),
-
-            description=data.get("description"),
-
-            electrician=electrician
-
+            title=request.POST['title'],
+            description=request.POST['description'],
+            location=request.POST['location'],
+            deadline=request.POST['deadline'],
+            electrician_id=electrician_id if electrician_id else None
         )
 
+        return redirect('jobs')
 
+    return render(request, 'add_job.html', {
+        'electricians': electricians
+    })
 
-        return JsonResponse({"message": "Job added"})
+def edit_job(request, id):
+    job = get_object_or_404(Job, id=id)
+    electricians = Electrician.objects.all()
 
+    if request.method == 'POST':
+        job.title = request.POST['title']
+        job.description = request.POST['description']
+        job.location = request.POST['location']
+        job.deadline = request.POST['deadline']
+        job.electrician_id = request.POST.get('electrician') or None
+        job.save()
 
+        return redirect('jobs')
 
+    return render(request, 'edit_job.html', {
+        'job': job,
+        'electricians': electricians
+    })
 
+def delete_job(request, id):
+    job = get_object_or_404(Job, id=id)
 
-@csrf_exempt
+    if request.method == 'POST':
+        job.delete()
+        return redirect('jobs')
+
+    return render(request, 'delete_job.html', {'job': job})
 
 def add_task(request):
+    jobs = Job.objects.all()
+    electricians = Electrician.objects.all()
 
-    if request.method == "POST":
-
-        data = json.loads(request.body)
-
-
-
-        job = Job.objects.get(id=data.get("job_id"))
-
-
-
+    if request.method == 'POST':
         Task.objects.create(
-
-            title=data.get("title"),
-
-            status=data.get("status"),
-
-            job=job
-
+            title=request.POST['title'],
+            description=request.POST['description'],
+            job_id=request.POST['job'],
+            electrician_id=request.POST.get('electrician') or None,
+            status=request.POST['status']
         )
+        return redirect('tasks')
 
+    return render(request, 'add_task.html', {
+        'jobs': jobs,
+        'electricians': electricians
+    })
 
+def edit_task(request, id):
+    task = get_object_or_404(Task, id=id)
+    jobs = Job.objects.all()
+    electricians = Electrician.objects.all()
 
-        return JsonResponse({"message": "Task added"})
+    if request.method == 'POST':
+        task.title = request.POST['title']
+        task.description = request.POST['description']
+        task.job_id = request.POST['job']
+        task.electrician_id = request.POST.get('electrician') or None
+        task.status = request.POST['status']
+        task.save()
+
+        return redirect('tasks')
+
+    return render(request, 'edit_task.html', {
+        'task': task,
+        'jobs': jobs,
+        'electricians': electricians
+    })
+
+def delete_task(request, id):
+    task = get_object_or_404(Task, id=id)
+
+    if request.method == 'POST':
+        task.delete()
+        return redirect('tasks')
+
+    return render(request, 'delete_task.html', {'task': task})
+
+def add_material(request):
+    jobs = Job.objects.all()
+
+    if request.method == 'POST':
+        Material.objects.create(
+            name=request.POST['name'],
+            quantity=request.POST['quantity'],
+            used_quantity=request.POST.get('used_quantity') or 0,
+            unit=request.POST['unit'],
+            job_id=request.POST['job']
+        )
+        return redirect('materials')
+
+    return render(request, 'add_material.html', {'jobs': jobs})
+
+def edit_material(request, id):
+    material = get_object_or_404(Material, id=id)
+    jobs = Job.objects.all()
+
+    if request.method == 'POST':
+        material.name = request.POST['name']
+        material.quantity = request.POST['quantity']
+        material.unit = request.POST['unit']
+        material.used_quantity = request.POST['used_quantity']
+        material.job_id = request.POST['job']
+        material.save()
+
+        return redirect('materials')
+
+    return render(request, 'edit_material.html', {
+        'material': material,
+        'jobs': jobs
+    })
+
+def delete_material(request, id):
+    material = get_object_or_404(Material, id=id)
+
+    if request.method == 'POST':
+        material.delete()
+        return redirect('materials')
+
+    return render(request, 'delete_material.html', {'material': material})

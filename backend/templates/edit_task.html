@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h3>Edit Task</h3>
+
+<form method="POST">
+{% csrf_token %}
+
+<div class="mb-3">
+<label>Title</label>
+<input type="text" name="title" class="form-control" 
+       value="{{ task.title }}" required>
+</div>
+
+<div class="mb-3">
+<label>Description</label>
+<textarea name="description" class="form-control">
+{{ task.description }}
+</textarea>
+</div>
+
+<div class="mb-3">
+<label>Select Job</label>
+<select name="job" class="form-control">
+<option value="">-- Select --</option>
+{% for job in jobs %}
+<option value="{{ job.id }}"
+{% if task.job.id == job.id %} selected {% endif %}
+>
+{{ job.title }}
+</option>
+{% endfor %}
+
+</select>
+</div>
+
+<div class="mb-3">
+<label>Assign Electrician</label>
+<select name="electrician" class="form-control">
+
+<option value="">-- Select --</option>
+
+{% for e in electricians %}
+<option value="{{ e.id }}"
+{% if task.electrician and task.electrician.id == e.id %} selected {% endif %}
+>
+{{ e.name }}
+</option>
+{% endfor %}
+
+</select>
+</div>
+
+<div class="mb-3">
+<label>Status</label>
+<select name="status" class="form-control">
+
+<option value="Pending" {% if task.status == 'Pending' %}selected{% endif %}>
+Pending
+</option>
+
+<option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>
+In Progress
+</option>
+
+<option value="Completed" {% if task.status == 'Completed' %}selected{% endif %}>
+Completed
+</option>
+
+</select>
+</div>
+
+<button class="btn btn-warning">Update</button>
+<a href="{% url 'tasks' %}" class="btn btn-secondary">Cancel</a>
+
+</form>
+
+{% endblock %}

@@ -1,104 +1,53 @@
-{% load static %}
+{% extends 'base.html' %}
+{% block content %}
 
-<!DOCTYPE html>
-<html>
-<head>
-<title>ECMS Dashboard</title>
-
-<link rel="stylesheet" href="{% static 'css/style.css' %}">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
-</head>
-
-<body>
-
-<div class="d-flex">
-
-<!-- Sidebar -->
-<div class="sidebar text-white p-3">
-
-<h4 class="text-center">ECMS</h4>
-<hr>
-
-<a href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-<a href="{% url 'electricians' %}"><i class="bi bi-person-workspace"></i> Electricians</a>
-<a href="{% url 'jobs' %}"><i class="bi bi-briefcase"></i> Jobs</a>
-<a href="{% url 'tasks' %}"><i class="bi bi-list-task"></i> Tasks</a>
-<a href="{% url 'materials' %}"><i class="bi bi-box-seam"></i> Materials</a>
-<a href="{% url 'reports' %}"><i class="bi bi-bar-chart"></i> Reports</a>
-<a href="{% url 'profile' %}"><i class="bi bi-person"></i> Profile</a>
-
-<a href="{% url 'logout' %}" class="nav-link text-danger p-3">
-    <i class="bi bi-box-arrow-right"></i> Logout
-</a>
-</div>
-
-<!-- Main Content -->
-<div class="flex-grow-1">
-
-<!-- Top Navbar -->
-<nav class="navbar navbar-light bg-white shadow-sm px-4">
-<span class="navbar-brand mb-0 h5">Electrician Contractor Management System</span>
-</nav>
-
-<div class="container-fluid p-4">
-
-<!-- PAGE CONTENT START -->
 <h3>Materials</h3>
+
+<a href="{% url 'add_material' %}" class="btn btn-primary mb-3">
+    Add Material
+</a>
 
 <table class="table table-striped">
 
 <thead>
-
 <tr>
-<th>Material</th>
-<th>Quantity</th>
-<th>Used</th>
+<th>Name</th>
+<th>Total Qty</th>
+<th>Unit</th>
+<th>Used Qty</th>
+<th>Remaining</th>
+<th>Job</th>
+<th>Action</th>
 </tr>
-
 </thead>
 
 <tbody>
 
+{% for m in materials %}
 <tr>
-<td>Electrical Wire</td>
-<td>200m</td>
-<td>120m</td>
+<td>{{ m.name }}</td>
+<td>{{ m.quantity }}</td>
+<td>{{ m.unit }}</td>
+<td>{{ m.used_quantity }}</td>
+<td>{{ m.remaining }}</td>
+<!-- <td>{{ m.quantity|add:"-"|add:m.used_quantity }}</td> -->
+<td>{{ m.job.title }}</td>
+
+<td>
+<a href="{% url 'edit_material' m.id %}" class="btn btn-sm btn-warning">Edit</a>
+<a href="{% url 'delete_material' m.id %}" class="btn btn-sm btn-danger">Delete</a>
+</td>
+
 </tr>
 
+{% empty %}
 <tr>
-<td>Switch Boards</td>
-<td>50</td>
-<td>30</td>
+<td colspan="6" class="text-center">No materials found</td>
 </tr>
-
-<tr>
-<td>Switch Buttons</td>
-<td>120</td>
-<td>87</td>
-</tr>
-
-<tr>
-<td>LED Tube Bulb</td>
-<td>75</td>
-<td>43</td>
-</tr>
+{% endfor %}
 
 </tbody>
 
 </table>
-<!-- PAGE CONTENT END -->
 
-</div>
-
-</div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
+{% endblock %}

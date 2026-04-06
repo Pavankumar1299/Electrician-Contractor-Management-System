@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h3>Edit Job</h3>
+
+<form method="POST">
+{% csrf_token %}
+
+<div class="mb-3">
+<label>Title</label>
+<input type="text" name="title" class="form-control" 
+       value="{{ job.title }}" required>
+</div>
+
+<div class="mb-3">
+<label>Description</label>
+<textarea name="description" class="form-control">{{ job.description }}</textarea>
+</div>
+
+<div class="mb-3">
+<label>Location</label>
+<input type="text" name="location" class="form-control" 
+       value="{{ job.location }}" required>
+</div>
+
+<div class="mb-3">
+<label>Deadline</label>
+<input type="date" name="deadline" class="form-control" 
+       value="{{ job.deadline|date:'Y-m-d' }}" required>
+</div>
+
+<div class="mb-3">
+<label>Assign Electrician</label>
+<select name="electrician" class="form-control">
+
+<option value="">-- Select --</option>
+
+{% for e in electricians %}
+<option value="{{ e.id }}" 
+{% if job.electrician and job.electrician.id == e.id %}
+selected
+{% endif %}
+>
+{{ e.name }}
+</option>
+{% endfor %}
+
+</select>
+</div>
+
+<button class="btn btn-warning">Update</button>
+<a href="{% url 'jobs' %}" class="btn btn-secondary">Cancel</a>
+
+</form>
+
+{% endblock %}

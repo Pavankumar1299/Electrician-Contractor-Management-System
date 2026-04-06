@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h3>Edit Electrician</h3>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label>Name</label>
+        <input type="text" name="name" class="form-control" value="{{ electrician.name }}">
+    </div>
+
+    <div class="mb-3">
+        <label>Phone</label>
+        <input type="text" name="phone" class="form-control" value="{{ electrician.phone }}">
+    </div>
+
+    <div class="mb-3">
+        <label>Email</label>
+        <input type="email" name="email" class="form-control" value="{{ electrician.email }}">
+    </div>
+
+    <div class="mb=3">
+        <label>Experience (years)</label>
+        <input type="number" name="experience" class="form-control" value="{{ electrician.experience }}">
+    </div>
+
+    <button type="submit" class="btn btn-warning">Update</button>
+    <a href="{% url 'electricians' %}" class="btn btn-secondary">Cancel</a>
+
+</form>
+
+{% endblock %}

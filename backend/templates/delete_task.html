@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h3 class="text-danger">Delete Task</h3>
+
+<div class="card shadow p-4">
+
+<p>Are you sure you want to delete this task?</p>
+
+<ul>
+<li><strong>Title:</strong> {{ task.title }}</li>
+<li><strong>Job:</strong> {{ task.job.title }}</li>
+<li><strong>Electrician:</strong>
+    {% if task.electrician %}
+        {{ task.electrician.name }}
+    {% else %}
+        Not Assigned
+    {% endif %}
+</li>
+<li><strong>Status:</strong> {{ task.status }}</li>
+</ul>
+
+<form method="POST">
+{% csrf_token %}
+
+<button type="submit" class="btn btn-danger">
+Yes, Delete
+</button>
+
+<a href="{% url 'tasks' %}" class="btn btn-secondary">
+Cancel
+</a>
+
+</form>
+
+</div>
+
+{% endblock %}
