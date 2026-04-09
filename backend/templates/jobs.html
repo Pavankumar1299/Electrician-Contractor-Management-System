@@ -3,9 +3,15 @@
 
 <h3>Jobs</h3>
 
-<a href="{% url 'add_job' %}" class="btn btn-primary mb-3">
-    Add Job
-</a>
+{% if request.user.userprofile.role != "ELECTRICIAN" %}
+<a href="{% url 'add_job' %}" class="btn btn-primary">Add Job</a>
+{% endif %}
+<br><br>
+<form method="GET">
+<input type="text" name="q" placeholder="Search jobs" class="form-control">
+<br>
+<button type="submit" class="btn btn-primary">Search</button>
+</form>
 
 <table class="table table-striped">
 
@@ -32,8 +38,8 @@
 <a href="{% url 'edit_job' job.id %}" class="btn btn-sm btn-warning">Edit</a>
 <a href="{% url 'delete_job' job.id %}" class="btn btn-sm btn-danger">Delete</a>
 </td>
-
 </tr>
+
 {% empty %}
 <tr>
 <td colspan="5" class="text-center">No jobs found</td>

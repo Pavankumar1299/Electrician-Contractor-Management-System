@@ -3,9 +3,13 @@
 
 <h3>Electricians</h3>
 
-<a href="{% url 'add_electrician' %}" class="btn btn-primary mb-3">
-    Add Electrician
-</a>
+{% if request.user.userprofile.role == "ADMIN" %}
+<a href="{% url 'add_electrician' %}" class="btn btn-primary">Add</a>
+{% endif %}
+
+<form method="GET" class="mb-3">
+    <input type="text" name="name" placeholder="Search electrician" class="form-control">
+</form>
 
 <table class="table table-striped">
 
@@ -44,7 +48,7 @@
 
 {% empty %}
 <tr>
-<td colspan="4" class="text-center">No electricians found</td>
+<td colspan="5" class="text-center">No electricians found</td>
 </tr>
 {% endfor %}
 

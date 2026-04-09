@@ -3,48 +3,45 @@
 
 <h3>Materials</h3>
 
-<a href="{% url 'add_material' %}" class="btn btn-primary mb-3">
-    Add Material
-</a>
+{% if request.user.userprofile.role != "ELECTRICIAN" %}
+<a href="{% url 'add_material' %}" class="btn btn-primary">Add Material</a>
+{% endif %}
 
 <table class="table table-striped">
 
 <thead>
-<tr>
-<th>Name</th>
-<th>Total Qty</th>
-<th>Unit</th>
-<th>Used Qty</th>
-<th>Remaining</th>
-<th>Job</th>
-<th>Action</th>
-</tr>
+    <tr>
+        <th>Name</th>
+        <th>Total Qty</th>
+        <th>Unit</th>
+        <th>Used Qty</th>
+        <th>Remaining</th>
+        <th>Job</th>
+        <th>Action</th>
+    </tr>
 </thead>
 
 <tbody>
 
-{% for m in materials %}
-<tr>
-<td>{{ m.name }}</td>
-<td>{{ m.quantity }}</td>
-<td>{{ m.unit }}</td>
-<td>{{ m.used_quantity }}</td>
-<td>{{ m.remaining }}</td>
-<!-- <td>{{ m.quantity|add:"-"|add:m.used_quantity }}</td> -->
-<td>{{ m.job.title }}</td>
+    {% for m in materials %}
+    <tr>
+        <td>{{ m.name }}</td>
+        <td>{{ m.quantity }}</td>
+        <td>{{ m.unit }}</td>
+        <td>{{ m.used_quantity }}</td>
+        <td>{{ m.remaining }}</td>
+        <td>{{ m.job.title }}</td>
+        <td>
+        <a href="{% url 'edit_material' m.id %}" class="btn btn-sm btn-warning">Edit</a>
+        <a href="{% url 'delete_material' m.id %}" class="btn btn-sm btn-danger">Delete</a>
+        </td>
+    </tr>
 
-<td>
-<a href="{% url 'edit_material' m.id %}" class="btn btn-sm btn-warning">Edit</a>
-<a href="{% url 'delete_material' m.id %}" class="btn btn-sm btn-danger">Delete</a>
-</td>
-
-</tr>
-
-{% empty %}
-<tr>
-<td colspan="6" class="text-center">No materials found</td>
-</tr>
-{% endfor %}
+    {% empty %}
+    <tr>
+        <td colspan="7" class="text-center">No materials found</td>
+    </tr>
+    {% endfor %}
 
 </tbody>
 

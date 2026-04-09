@@ -98,3 +98,37 @@ background:#3498db;
 text-align:center;
 margin-top:10px;
 }
+
+/* Side NavBar */
+#wrapper {
+    display: flex;
+}
+
+/* Sidebar default (desktop) */
+#sidebar-wrapper {
+    width: 250px;
+    min-height: 100vh;
+    background-color: #212529;
+    transition: all 0.3s ease;
+}
+
+/* Page content */
+#page-content-wrapper {
+    flex: 1;
+}
+
+/* MOBILE BEHAVIOR */
+@media (max-width: 768px) {
+
+    #sidebar-wrapper {
+        position: fixed;
+        left: -250px;
+        top: 0;
+        height: 100%;
+        z-index: 1000;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        left: 0;
+    }
+}

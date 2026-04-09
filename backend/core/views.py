@@ -1,15 +1,15 @@
 from django.shortcuts import get_object_or_404, redirect, render
-from django.shortcuts import render, redirect
-from .models import Electrician, Job, Task, Material # Removed User from here to use default auth User
+from .models import Electrician, Job, Task, Material, UserProfile
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
+from django.contrib.auth.decorators import login_required
 from functools import wraps
+from .models import Notification
 
 # -------------------- SECURITY DECORATOR --------------------
-# Place @jwt_cookie_required above any view that needs login protection
 def jwt_cookie_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
@@ -21,6 +21,8 @@ def jwt_cookie_required(view_func):
             jwt_auth = JWTAuthentication()
             validated_token = jwt_auth.get_validated_token(token)
             request.user = jwt_auth.get_user(validated_token) # Attach user to request
+            UserProfile.objects.get_or_create(user=request.user)
+
         except (InvalidToken, AuthenticationFailed):
             # Token is expired or tampered with
             response = redirect('login')
@@ -30,77 +32,63 @@ def jwt_cookie_required(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
+def role_required(allowed_roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            role = request.user.userprofile.role
 
-# -------------------- PAGE VIEWS (HTML) --------------------
+            if role not in allowed_roles:
+                return redirect('dashboard')  # or show error
 
-def home_page(request):
-    return render(request, "index.html")
-
-@jwt_cookie_required
-def electricians_page(request):
-    return render(request, "electricians.html")
-
-@jwt_cookie_required
-def jobs_page(request):
-    jobs = Job.objects.select_related('electrician').all()
-    return render(request, 'jobs.html', {'jobs': jobs})
-
-@jwt_cookie_required
-def tasks_page(request):
-    tasks = Task.objects.select_related('job', 'electrician').all()
-    return render(request, 'tasks.html', {'tasks': tasks})
-
-@jwt_cookie_required
-def materials_page(request):
-    materials = Material.objects.select_related('job').all()
-    return render(request, 'materials.html', {'materials': materials})
-
-@jwt_cookie_required
-def profile_page(request):
-    return render(request, "profile.html")
-
-@jwt_cookie_required
-def reports_page(request):
-    return render(request, "reports.html")
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
-# -------------------- AUTH (HTML FLOW) --------------------
-
+# -------------------- LOGIN & SIGNUP --------------------
 def register_view(request):
     if request.COOKIES.get('access_token'):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        name = request.POST.get('name') 
+        name = request.POST.get('name')
         email = request.POST.get('email')
-        # phone = request.POST.get('phone') # Grab the phone
-        # role = request.POST.get('role')   # Grab the role
+        phone = request.POST.get('phone')
         password = request.POST.get('password')
+        role = request.POST.get('role')
 
-        # Basic Validation
-        # if not role or role == "Select Role":
-        #     return render(request, 'register.html', {'error': 'Please select a valid role.'})
+        if not role:
+            return render(request, 'register.html', {'error': 'Please select a role'})
 
         if User.objects.filter(username=name).exists():
-            return render(request, 'register.html', {'error': 'That name is already taken.'})
+            return render(request, 'register.html', {'error': 'Username taken'})
         
         if User.objects.filter(email=email).exists():
-            return render(request, 'register.html', {'error': 'That email is already registered.'})
+            return render(request, 'register.html', {'error': 'Email already registered'})
 
-        # Create the user securely
-        user = User.objects.create_user(username=name, email=email, password=password)
+        user = User.objects.create_user(
+            username=name,
+            email=email,
+            password=password
+        )
 
-        # NOTE: If you created a UserProfile model for Phone/Role, you would save it here:
-        # UserProfile.objects.create(user=user, phone=phone, role=role)
+        # 🔥 assign role here
+        profile = user.userprofile
+        profile.role = role
+        profile.phone = phone
+        profile.save()
 
         refresh = RefreshToken.for_user(user)
+
         response = redirect('dashboard')
         response.set_cookie(
-            key='access_token', 
-            value=str(refresh.access_token), 
+            key='access_token',
+            value=str(refresh.access_token),
             httponly=True,
             samesite='Lax'
         )
+
         return response
 
     return render(request, 'register.html')
@@ -113,50 +101,65 @@ def login_view(request):
         username_input = request.POST.get('username')
         password_input = request.POST.get('password')
 
-        print(f"Attempting login with username: {username_input} and password: {password_input}")  # Debugging line
-        # user = User.objects.create_user("admin", "pk@gmail.com", "1234")
         user = authenticate(request, username=username_input, password=password_input)
-        
+
         if user is not None:
+            # 🔥 ensure profile exists
+            UserProfile.objects.get_or_create(user=user)
+
             refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
-            
-            response = redirect('dashboard') 
+
+            response = redirect('dashboard')
             response.set_cookie(
-                key='access_token', 
-                value=access_token, 
-                httponly=True, 
-                secure=False,  
+                key='access_token',
+                value=str(refresh.access_token),
+                httponly=True,
                 samesite='Lax'
             )
             return response
         else:
             return render(request, 'login.html', {'error': 'Invalid username or password.'})
-            
+
     return render(request, 'login.html')
 
 
 # ---------------- LOGOUT ----------------
-
 def logout_view(request):
     response = redirect('login') 
     response.delete_cookie('access_token')
     return response
 
 
-# -------------------- API (JSON for fetch/Postman) --------------------
-# ... (Keep your API views exactly as they were) ...
+# -------------------- PAGE VIEWS --------------------
+# --------------------- HOME --------------------
+def home_page(request):
+    return render(request, "index.html")
 
+
+# -------------------- DASHBOARD --------------------
 @jwt_cookie_required
 def dashboard_view(request):
+
+    role = request.user.userprofile.role
+
+    if role == 'ELECTRICIAN':
+        tasks = Task.objects.filter(electrician__user=request.user)
+    else:
+        tasks = Task.objects.all()
+
+    electricians_count = UserProfile.objects.filter(role='ELECTRICIAN').count()
+    contractors_count = UserProfile.objects.filter(role='CONTRACTOR').count()
+
     total_tasks = Task.objects.count()
     completed_tasks = Task.objects.filter(status='Completed').count()
 
     completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:5]
 
     context = {
-        'electricians_count': Electrician.objects.count(),
+        'electricians_count': electricians_count,
+        'contractors_count': contractors_count,
         'jobs_count': Job.objects.count(),
         'tasks_count': Task.objects.count(),
 
@@ -164,17 +167,31 @@ def dashboard_view(request):
         'in_progress_tasks': Task.objects.filter(status='In Progress').count(),
         'completed_tasks': Task.objects.filter(status='Completed').count(),
 
-        'completion_rate': round(completion_rate, 2)
+        'completion_rate': round(completion_rate, 2),
+        
+        'notifications': notifications
     }
+    print(context)
     return render(request, 'dashboard.html', context)
 
+
+# -------------------- ELECTRICIANS --------------------
+@jwt_cookie_required
+@login_required
 def electricians_view(request):
-    electricians = Electrician.objects.all()
-    print(electricians)
+    name = request.GET.get('name')
+
+    if name:
+        electricians = Electrician.objects.filter(name__icontains=name)
+    else:
+        electricians = Electrician.objects.all()
+
     return render(request, 'electricians.html', {
         'electricians': electricians
     })
 
+@jwt_cookie_required
+@role_required(['ADMIN'])
 def add_electrician(request):
     if request.method == 'POST':
         Electrician.objects.create(
@@ -203,6 +220,8 @@ def edit_electrician(request, id):
         'electrician': electrician
     })
 
+@jwt_cookie_required
+@role_required(['ADMIN'])
 def delete_electrician(request, id):
     electrician = get_object_or_404(Electrician, id=id)
 
@@ -214,6 +233,22 @@ def delete_electrician(request, id):
         'electrician': electrician
     })
 
+
+# -------------------- JOBS --------------------
+@jwt_cookie_required
+def jobs_page(request):
+    query = request.GET.get('q')
+
+    if query:
+        jobs = Job.objects.filter(title__icontains=query)
+    else:
+        jobs = Job.objects.all()
+
+    # jobs = Job.objects.select_related('electrician').all()
+    return render(request, 'jobs.html', {'jobs': jobs})
+
+@jwt_cookie_required
+@role_required(['ADMIN', 'CONTRACTOR'])
 def add_job(request):
     electricians = Electrician.objects.all()
 
@@ -262,18 +297,43 @@ def delete_job(request, id):
 
     return render(request, 'delete_job.html', {'job': job})
 
+
+# -------------------- TASKS --------------------
+@jwt_cookie_required
+def tasks_page(request):
+    role = request.user.userprofile.role
+    status = request.GET.get('status')
+
+    if role == 'ELECTRICIAN':
+        tasks = Task.objects.filter(electrician__user=request.user)
+    else:
+        tasks = Task.objects.all()
+
+    if status:
+        tasks = tasks.filter(status=status)
+
+    return render(request, 'tasks.html', {'tasks': tasks})
+
+@jwt_cookie_required
+@role_required(['ADMIN', 'CONTRACTOR'])
 def add_task(request):
     jobs = Job.objects.all()
     electricians = Electrician.objects.all()
 
     if request.method == 'POST':
-        Task.objects.create(
+        task = Task.objects.create(
             title=request.POST['title'],
             description=request.POST['description'],
             job_id=request.POST['job'],
             electrician_id=request.POST.get('electrician') or None,
             status=request.POST['status']
         )
+
+        if task.electrician and task.electrician.user:
+            Notification.objects.create(
+                user=task.electrician.user,
+                message=f"New task assigned: {task.title}"
+            )
         return redirect('tasks')
 
     return render(request, 'add_task.html', {
@@ -283,24 +343,18 @@ def add_task(request):
 
 def edit_task(request, id):
     task = get_object_or_404(Task, id=id)
-    jobs = Job.objects.all()
-    electricians = Electrician.objects.all()
 
     if request.method == 'POST':
-        task.title = request.POST['title']
-        task.description = request.POST['description']
-        task.job_id = request.POST['job']
-        task.electrician_id = request.POST.get('electrician') or None
         task.status = request.POST['status']
         task.save()
 
-        return redirect('tasks')
+        if task.status == 'Completed' and task.electrician and task.electrician.user:
+            Notification.objects.create(
+                user=task.electrician.user,
+                message=f"Task completed: {task.title}"
+            )
 
-    return render(request, 'edit_task.html', {
-        'task': task,
-        'jobs': jobs,
-        'electricians': electricians
-    })
+        return redirect('tasks')
 
 def delete_task(request, id):
     task = get_object_or_404(Task, id=id)
@@ -311,6 +365,15 @@ def delete_task(request, id):
 
     return render(request, 'delete_task.html', {'task': task})
 
+
+# -------------------- MATERIALS --------------------
+@jwt_cookie_required
+def materials_page(request):
+    materials = Material.objects.select_related('job').all()
+    return render(request, 'materials.html', {'materials': materials})
+
+@jwt_cookie_required
+@role_required(['ADMIN', 'CONTRACTOR'])
 def add_material(request):
     jobs = Job.objects.all()
 
@@ -354,3 +417,68 @@ def delete_material(request, id):
 
     return render(request, 'delete_material.html', {'material': material})
 
+
+# -------------------- PROFILE --------------------
+@jwt_cookie_required
+@login_required
+def profile_page(request):
+    user = request.user
+    profile = user.userprofile
+
+    return render(request, 'profile.html', {
+        'user': user,
+        'role': profile.role
+    })
+
+# @login_required
+@jwt_cookie_required
+def update_profile(request):
+    user = request.user
+    profile = user.userprofile
+
+    if request.method == 'POST':
+        user.username = request.POST.get('username')
+        profile.phone = request.POST.get('phone')
+        user.email = request.POST.get('email')
+
+        user.save()
+        profile.save()
+
+        return redirect('profile')
+
+    return render(request, 'update_profile.html', {
+        'user': user,
+        'profile': profile
+    })
+
+
+# -------------------- REPORTS --------------------
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def reports_page(request):
+    from django.utils.timezone import now
+    from django.db.models import Count
+
+    today = now().date()
+
+    tasks_today = Task.objects.filter(created_at__date=today)
+    completed_tasks = Task.objects.filter(status='Completed')
+
+    activity = Task.objects.values('electrician__name').annotate(count=Count('id'))
+
+    context = {
+        'electricians': Electrician.objects.count(),
+        'jobs': Job.objects.count(),
+        'tasks': Task.objects.count(),
+        'materials': Material.objects.count(),
+
+        'pending': Task.objects.filter(status='Pending').count(),
+        'in_progress': Task.objects.filter(status='In Progress').count(),
+        'completed': Task.objects.filter(status='Completed').count(),
+
+        'tasks_today': tasks_today,
+        'completed_tasks': completed_tasks,
+        'activity': activity,
+    }
+
+    return render(request, 'reports.html', context)

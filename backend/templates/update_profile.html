@@ -10,17 +10,17 @@
 
 <div class="mb-3">
 <label>Username</label>
-<input type="text" name="username" class="form-control" value="{{ user.username }}" readonly>
+<input type="text" name="username" class="form-control" value="{{ user.username }}">
 </div>
 
 <div class="mb-3">
 <label>Email</label>
-<input type="email" name="email" class="form-control" value="{{ user.email }}" readonly>
+<input type="email" name="email" class="form-control" value="{{ user.email }}">
 </div>
 
 <div class="mb-3">
 <label>Phone</label>
-<input type="email" name="email" class="form-control" value="{{ request.user.userprofile.phone }}" readonly>
+<input type="text" name="phone" class="form-control" value="{{ request.user.userprofile.phone }}">
 </div>
 
 <div class="mb-3">
@@ -29,7 +29,7 @@
        value="{{ request.user.userprofile.role }}" readonly>
 </div>
 
-<a href="{% url 'update_profile' %}" class="btn btn-primary">Edit</a>
+<button class="btn btn-primary">Update</button>
 
 </form>
 

@@ -1,18 +1,35 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<!-- PAGE CONTENT START -->
 <h3>Reports</h3>
 
+<h5 class="mt-4">Daily Work Report</h5>
 <ul class="list-group">
-
-<li class="list-group-item">Daily Work Report</li>
-
-<li class="list-group-item">Task Completion Report</li>
-
-<li class="list-group-item">Worker Activity Report</li>
-
+{% for task in tasks_today %}
+<li class="list-group-item">
+    {{ task.title }} - {{ task.status }}
+</li>
+{% empty %}
+<li class="list-group-item">No tasks today</li>
+{% endfor %}
 </ul>
-<!-- PAGE CONTENT END -->
+
+<h5 class="mt-4">Task Completion Report</h5>
+<ul class="list-group">
+{% for task in completed_tasks %}
+<li class="list-group-item">
+    {{ task.title }}
+</li>
+{% endfor %}
+</ul>
+
+<h5 class="mt-4">Electrician Activity</h5>
+<ul class="list-group">
+{% for a in activity %}
+<li class="list-group-item">
+    {{ a.electrician__name }} - {{ a.count }} tasks
+</li>
+{% endfor %}
+</ul>
 
 {% endblock %}

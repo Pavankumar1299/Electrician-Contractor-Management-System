@@ -3,9 +3,18 @@
 
 <h3>Tasks</h3>
 
-<a href="{% url 'add_task' %}" class="btn btn-primary mb-3">
-    Add Task
-</a>
+{% if request.user.userprofile.role != "ELECTRICIAN" %}
+<a href="{% url 'add_task' %}" class="btn btn-primary">Add Task</a>
+{% endif %}
+
+<form method="GET" class="mb-3">
+    <select name="status" class="form-control">
+        <option value="">All</option>
+        <option value="Pending">Pending</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Completed">Completed</option>
+    </select>
+</form>
 
 <table class="table table-striped">
 

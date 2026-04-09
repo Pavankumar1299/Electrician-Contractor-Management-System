@@ -3,8 +3,28 @@
 
 <h3 class="mb-4">Dashboard</h3>
 
+<h5>Notifications</h5>
+<ul class="list-group">
+{% for n in notifications %}
+<li class="list-group-item">{{ n.message }}</li>
+{% endfor %}
+</ul>
+
 <div class="row g-4">
 
+<!-- Contractors -->
+{% with role=request.user.userprofile.role %}
+{% if role|upper == "ADMIN" %}
+<div class="col-md-4">
+    <div class="card shadow p-4 text-center">
+        <i class="bi bi-person fs-1 text-primary"></i>
+        <h5>Total Contractor</h5>
+        <h3>{{ contractors_count }}</h3>
+    </div>
+</div>
+{% endif %}
+{% endwith %}
+    
 <!-- Electricians -->
 <div class="col-md-4">
 <div class="card shadow p-4 text-center">
@@ -71,12 +91,16 @@
 <h5>Task Completion Rate</h5>
 
 <div class="progress mt-3" style="height: 25px;">
-<div class="progress-bar bg-success"
+    <!-- <div class="progress-bar bg-success"
          role="progressbar"
          style="width: {{ completion_rate }}%;">
         {{ completion_rate }}%
-        
+    </div> -->
+    <div class="progress-bar bg-success" role="progressbar" id="task-bar">
     </div>
+    <script>
+        document.getElementById('task-bar').style.width = '{{ completion_rate }}%';
+    </script>        
 </div>
 </div>
 </div>
