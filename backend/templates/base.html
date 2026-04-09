@@ -51,13 +51,22 @@
     <div id="page-content-wrapper" class="w-100 flex-grow-1">
 
         <!-- Top Navbar -->
-        <nav class="navbar navbar-light bg-white shadow-sm px-4">
-            <button class="btn btn-dark d-md-none" id="menu-toggle">☰</button>
-            <span class="navbar-brand mb-0 h5">
-                Electrician Contractor Management System
-            </span>
-            <p>Welcome, {{ request.user.username }} ({{ request.user.userprofile.role }})</p>
-        </nav>
+        <nav class="navbar navbar-light bg-white shadow-sm px-4 flex-wrap">
+
+        <!-- Hamburger -->
+        <button class="btn btn-dark d-md-none me-2" id="menu-toggle">☰</button>
+
+        <!-- Title -->
+        <span class="navbar-brand mb-0 h5 flex-grow-1 text-center text-md-start">
+            Electrician Contractor Management System
+        </span>
+
+        <!-- Welcome text -->
+        <p class="mb-0 w-100 text-center text-md-end mt-2 mt-md-0">
+            Welcome, {{ request.user.username }} ({{ request.user.userprofile.role }})
+        </p>
+
+    </nav>
 
         <div class="container-fluid p-4">
             {% block content %}{% endblock %}

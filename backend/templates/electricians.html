@@ -7,8 +7,16 @@
 <a href="{% url 'add_electrician' %}" class="btn btn-primary">Add</a>
 {% endif %}
 
-<form method="GET" class="mb-3">
-    <input type="text" name="name" placeholder="Search electrician" class="form-control">
+<br><br>
+<!-- <form method="GET" class="mb-3">
+    <input type="text" name="name" placeholder="Search electrician" class="form-control" onchange="this.form.submit()">
+</form> -->
+<form method="GET" action="{% url 'electricians' %}" class="d-flex align-items-center gap-2">
+    <div style="flex-grow: 1;">
+        <input type="text" name="name" placeholder="Search electrician" class="form-control" onchange="this.form.submit()">
+    </div>
+
+    <a href="{% url 'electricians' %}" class="btn btn-secondary">All</a>
 </form>
 
 <table class="table table-striped">

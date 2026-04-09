@@ -7,10 +7,15 @@
 <a href="{% url 'add_job' %}" class="btn btn-primary">Add Job</a>
 {% endif %}
 <br><br>
-<form method="GET">
-<input type="text" name="q" placeholder="Search jobs" class="form-control">
-<br>
-<button type="submit" class="btn btn-primary">Search</button>
+<!-- <form method="GET">
+    <input type="text" name="q" placeholder="Search jobs" class="form-control" onchange="this.form.submit()">
+</form> -->
+<form method="GET" action="{% url 'jobs' %}" class="d-flex align-items-center gap-2">
+    <div style="flex-grow: 1;">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search jobs" class="form-control" onchange="this.form.submit()">
+    </div>
+
+    <a href="{% url 'jobs' %}" class="btn btn-secondary">All</a>
 </form>
 
 <table class="table table-striped">

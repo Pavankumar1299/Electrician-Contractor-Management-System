@@ -6,13 +6,16 @@
 {% if request.user.userprofile.role != "ELECTRICIAN" %}
 <a href="{% url 'add_task' %}" class="btn btn-primary">Add Task</a>
 {% endif %}
-
+<br><br>
 <form method="GET" class="mb-3">
-    <select name="status" class="form-control">
+    <select name="status" class="form-control" onchange="this.form.submit()">
         <option value="">All</option>
-        <option value="Pending">Pending</option>
+        <!-- <option value="Pending">Pending</option>
         <option value="In Progress">In Progress</option>
-        <option value="Completed">Completed</option>
+        <option value="Completed">Completed</option> -->
+        <option value="Pending" {% if request.GET.status == "Pending" %}selected{% endif %}>Pending</option>
+        <option value="In Progress" {% if request.GET.status == "In Progress" %}selected{% endif %}>In Progress</option>
+        <option value="Completed" {% if request.GET.status == "Completed" %}selected{% endif %}>Completed</option>
     </select>
 </form>
 

@@ -1,0 +1,73 @@
+USERS: 
+Admin / Admin@123 /  ADMIN 
+Contractor / Ctr@123 / CONTRACTOR 
+Ravi / 123456 / ELECTRICIAN 
+Arjun / 123456 / ELECTRICIAN 
+Manoj / 123456 / ELECTRICIAN 
+Suresh / 123456 / ELECTRICIAN 
+Kiran / 123456 / ELECTRICIAN
+
+9892533999
+9795995995
+9820268868
+8080778495
+9824906700
+9161076127
+9839110210
+9795259595
+9839740039
+9450730567
+
+JOBS:
+1. Residential Electrical Wiring - Bangalore
+2. Office Lighting Installation - Mysore
+3. Industrial Panel Setup - Hubli
+4. CCTV Wiring Setup - Bangalore
+5. Apartment Maintenance Work - Mysore
+6. Solar Panel Installation - Hubli
+7. Factory Electrical Repair - Bangalore
+8. Smart Home Automation Setup - Mysore
+
+TASKS: 
+1. Install main distribution board - Pending
+2. Lay conduit pipes - In Progress
+3. Pull electrical cables - Completed
+4. Install switches and sockets - Pending
+5. Test wiring connections - In Progress
+6. Install LED lights - Completed
+7. Fix faulty wiring - Pending
+8. Replace damaged switches - Completed
+9. Setup circuit breakers - In Progress 
+10. Install ceiling fans - Pending 
+11. Electrical safety inspection - Completed 
+
+12. Cable termination - In Progress 
+13. Install inverter wiring - Pending 
+14. Connect earthing system - Completed 
+15. Test load capacity - Pending 
+16. Install street lights - In Progress 
+17. Fix power fluctuation issue - Completed 
+18. Install junction boxes - Pending 
+19. Wiring for CCTV cameras - In Progress 
+20. Install solar inverter - Completed 
+21. Battery backup setup - Pending 
+22. Install motion sensors - In Progress 
+23. Final system testing - Completed
+
+MATERIALS:
+1. Copper Wire (meters)
+2. PVC Conduit Pipe (meters)
+3. Switch Boards (pcs)
+4. LED Bulbs (pcs)
+5. Circuit Breakers (pcs)
+6. Electrical Tape (rolls)
+7. Junction Boxes (pcs)
+8. Distribution Board (pcs)
+
+9. Cable Clips (pcs) 
+10. Earthing Rod (pcs) 
+11. Solar Panels (pcs)
+12. Inverter Unit (pcs) 
+13. Battery Units (pcs) 
+14. CCTV Cables (meters)
+15. Motion Sensors (pcs)

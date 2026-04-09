@@ -73,7 +73,16 @@ def register_view(request):
             password=password
         )
 
-        # 🔥 assign role here
+        if role == "ELECTRICIAN":
+            Electrician.objects.create(
+                user=user,
+                name=name,
+                email=email,
+                phone=phone,
+                experience=0
+            )
+
+        # assign role here
         profile = user.userprofile
         profile.role = role
         profile.phone = phone
@@ -171,7 +180,6 @@ def dashboard_view(request):
         
         'notifications': notifications
     }
-    print(context)
     return render(request, 'dashboard.html', context)
 
 
@@ -341,20 +349,27 @@ def add_task(request):
         'electricians': electricians
     })
 
+@jwt_cookie_required
 def edit_task(request, id):
     task = get_object_or_404(Task, id=id)
+    jobs = Job.objects.all()
+    electricians = Electrician.objects.all()
 
     if request.method == 'POST':
+        task.title = request.POST['title']
+        task.description = request.POST['description']
+        task.job_id = request.POST['job']
+        task.electrician_id = request.POST.get('electrician') or None
         task.status = request.POST['status']
         task.save()
 
-        if task.status == 'Completed' and task.electrician and task.electrician.user:
-            Notification.objects.create(
-                user=task.electrician.user,
-                message=f"Task completed: {task.title}"
-            )
-
         return redirect('tasks')
+
+    return render(request, 'edit_task.html', {
+        'task': task,
+        'jobs': jobs,
+        'electricians': electricians
+    })
 
 def delete_task(request, id):
     task = get_object_or_404(Task, id=id)

@@ -18,7 +18,13 @@
 
 <div class="mb-3">
 <label>Unit</label>
-<input type="text" name="unit" class="form-control" placeholder="kg, pcs, meters" required>
+    <select type="text" name="unit" class="form-control" required>
+        <option value="" disabled selected>-- Select --</option>
+        <option value="pcs">pcs</option>
+        <option value="kg">kg</option>
+        <option value="rolls">rolls</option>
+        <option value="meters">meters</option>  
+    </select>
 </div>
 
 <div class="mb-3">
@@ -37,6 +43,7 @@
 </div>
 
 <button class="btn btn-success">Save</button>
+<a href="{% url 'materials' %}" class="btn btn-secondary">Cancel</a>
 
 </form>
 

@@ -15,7 +15,7 @@
 <!-- Contractors -->
 {% with role=request.user.userprofile.role %}
 {% if role|upper == "ADMIN" %}
-<div class="col-md-4">
+<div class="col-md-3">
     <div class="card shadow p-4 text-center">
         <i class="bi bi-person fs-1 text-primary"></i>
         <h5>Total Contractor</h5>
@@ -26,7 +26,7 @@
 {% endwith %}
     
 <!-- Electricians -->
-<div class="col-md-4">
+<div class="col-md-3">
 <div class="card shadow p-4 text-center">
 <i class="bi bi-person-workspace fs-1 text-primary"></i>
 <h5>Total Electricians</h5>
@@ -35,7 +35,7 @@
 </div>
 
 <!-- Jobs -->
-<div class="col-md-4">
+<div class="col-md-3">
 <div class="card shadow p-4 text-center">
 <i class="bi bi-briefcase fs-1 text-success"></i>
 <h5>Active Jobs</h5>
@@ -44,7 +44,7 @@
 </div>
 
 <!-- Total Tasks -->
-<div class="col-md-4">
+<div class="col-md-3">
 <div class="card shadow p-4 text-center">
 <i class="bi bi-list-task fs-1 text-dark"></i>
 <h5>Total Tasks</h5>
@@ -91,16 +91,11 @@
 <h5>Task Completion Rate</h5>
 
 <div class="progress mt-3" style="height: 25px;">
-    <!-- <div class="progress-bar bg-success"
+    <div class="progress-bar bg-success"
          role="progressbar"
-         style="width: {{ completion_rate }}%;">
+         style="width: {{ completion_rate }}%;"> <!-- this is not an error -->
         {{ completion_rate }}%
-    </div> -->
-    <div class="progress-bar bg-success" role="progressbar" id="task-bar">
-    </div>
-    <script>
-        document.getElementById('task-bar').style.width = '{{ completion_rate }}%';
-    </script>        
+    </div>      
 </div>
 </div>
 </div>
