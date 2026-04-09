@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Electrician, Job, Task, Material, UserProfile
+from .models import Electrician, Job, Task, Material, UserProfile, Notification
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -7,7 +7,6 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
 from django.contrib.auth.decorators import login_required
 from functools import wraps
-from .models import Notification
 
 # -------------------- SECURITY DECORATOR --------------------
 def jwt_cookie_required(view_func):
@@ -148,40 +147,51 @@ def home_page(request):
 # -------------------- DASHBOARD --------------------
 @jwt_cookie_required
 def dashboard_view(request):
-
     role = request.user.userprofile.role
 
+    # ROLE BASED DATA
     if role == 'ELECTRICIAN':
         tasks = Task.objects.filter(electrician__user=request.user)
+        jobs = Job.objects.filter(electrician__user=request.user)
     else:
         tasks = Task.objects.all()
+        jobs = Job.objects.all()
 
-    electricians_count = UserProfile.objects.filter(role='ELECTRICIAN').count()
+    electricians_count = Electrician.objects.count()
     contractors_count = UserProfile.objects.filter(role='CONTRACTOR').count()
 
-    total_tasks = Task.objects.count()
-    completed_tasks = Task.objects.filter(status='Completed').count()
+    pending_tasks = tasks.filter(status='Pending').count()
+    in_progress_tasks = tasks.filter(status='In Progress').count()
+    completed_tasks = tasks.filter(status='Completed').count()
 
+    total_tasks = tasks.count()
     completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:5]
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
 
     context = {
         'electricians_count': electricians_count,
         'contractors_count': contractors_count,
-        'jobs_count': Job.objects.count(),
-        'tasks_count': Task.objects.count(),
+        'jobs_count': jobs.count(),
+        'tasks_count': total_tasks,
 
-        'pending_tasks': Task.objects.filter(status='Pending').count(),
-        'in_progress_tasks': Task.objects.filter(status='In Progress').count(),
-        'completed_tasks': Task.objects.filter(status='Completed').count(),
+        'pending_tasks': pending_tasks,
+        'in_progress_tasks': in_progress_tasks,
+        'completed_tasks': completed_tasks,
 
         'completion_rate': round(completion_rate, 2),
-        
         'notifications': notifications
     }
+
     return render(request, 'dashboard.html', context)
 
+
+# ------ DELETE NOTIFICATION (X button) -------------
+@jwt_cookie_required
+def delete_notification(request, id):
+    notification = get_object_or_404(Notification, id=id, user=request.user)
+    notification.delete()
+    return redirect('dashboard')
 
 # -------------------- ELECTRICIANS --------------------
 @jwt_cookie_required

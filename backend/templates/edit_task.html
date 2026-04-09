@@ -5,7 +5,8 @@
 
 <form method="POST">
 {% csrf_token %}
-
+{% with role=request.user.userprofile.role %}
+{% if role|upper == "ADMIN" %}
 <div class="mb-3">
 <label>Title</label>
 <input type="text" name="title" class="form-control" 
@@ -50,6 +51,52 @@
 
 </select>
 </div>
+{% else %}
+<div class="mb-3">
+<label>Title</label>
+<input type="text" name="title" class="form-control" 
+       value="{{ task.title }}" required readonly>
+</div>
+
+<div class="mb-3">
+<label>Description</label>
+<textarea name="description" class="form-control" required readonly>
+{{ task.description }}
+</textarea>
+</div>
+
+<div class="mb-3">
+<label>Select Job</label>
+<select name="job" class="form-control" disabled>
+<option value="" disabled selected>-- Select --</option>
+{% for job in jobs %}
+<option value="{{ job.id }}"
+{% if task.job.id == job.id %} selected {% endif %}
+>
+{{ job.title }}
+</option>
+{% endfor %}
+
+</select>
+<input type="hidden" name="job" value="{{ task.job.id }}">
+</div>
+
+<div class="mb-3">
+<label>Assign Electrician</label>
+<select name="electrician" class="form-control" required disabled>
+<option value="" disabled selected>-- Select --</option>
+{% for e in electricians %}
+<option value="{{ e.id }}"
+{% if task.electrician and task.electrician.id == e.id %} selected {% endif %}
+>
+{{ e.name }}
+</option>
+{% endfor %}
+</select>
+<input type="hidden" name="electrician" value="{{ task.electrician.id }}">
+</div>
+{% endif %}
+{% endwith %}
 
 <div class="mb-3">
 <label>Status</label>

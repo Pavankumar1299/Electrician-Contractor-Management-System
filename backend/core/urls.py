@@ -35,4 +35,6 @@ urlpatterns = [
 
     path('profile/', views.profile_page, name='profile'),
     path('profile/update/', views.update_profile, name='update_profile'),
+
+    path('notification/delete/<int:id>/', views.delete_notification, name='delete_notification'),
 ]

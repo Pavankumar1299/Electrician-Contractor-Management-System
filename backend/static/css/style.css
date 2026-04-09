@@ -28,6 +28,7 @@ padding:25px;
 .card{
 border:none;
 border-radius:10px;
+height: 100%;
 }
 
 .table th{
@@ -131,4 +132,9 @@ margin-top:10px;
     #wrapper.toggled #sidebar-wrapper {
         left: 0;
     }
+}
+
+select:disabled, input:disabled, textarea:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
 }

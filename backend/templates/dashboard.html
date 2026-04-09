@@ -3,59 +3,113 @@
 
 <h3 class="mb-4">Dashboard</h3>
 
+<!-- NOTIFICATIONS -->
+{% with role=request.user.userprofile.role %}
+
+{% if role|upper == "ELECTRICIAN" %}
 <h5>Notifications</h5>
-<ul class="list-group">
+
+<ul class="list-group mb-4">
 {% for n in notifications %}
-<li class="list-group-item">{{ n.message }}</li>
+<li class="list-group-item d-flex justify-content-between align-items-center">
+
+    <div>
+        {{ n.message }}
+        <br>
+        <small class="text-muted">{{ n.created_at|timesince }} ago</small>
+    </div>
+
+    <!-- ❌ DELETE BUTTON -->
+    <a href="{% url 'delete_notification' n.id %}" 
+       class="btn btn-sm btn-danger">✖</a>
+
+</li>
+{% empty %}
+<li class="list-group-item text-center text-muted">
+    No notifications
+</li>
 {% endfor %}
 </ul>
+{% endif %}
 
+{% endwith %}
+
+<!-- 🔥 DASHBOARD CARDS -->
 <div class="row g-4">
 
-<!-- Contractors -->
 {% with role=request.user.userprofile.role %}
+
 {% if role|upper == "ADMIN" %}
-<div class="col-md-3">
-    <div class="card shadow p-4 text-center">
-        <i class="bi bi-person fs-1 text-primary"></i>
-        <h5>Total Contractor</h5>
-        <h3>{{ contractors_count }}</h3>
+
+    <!-- ADMIN: 4 cards -->
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card shadow p-4 text-center">
+            <i class="bi bi-person fs-1 text-primary"></i>
+            <h5>Total Contractor</h5>
+            <h3>{{ contractors_count }}</h3>
+        </div>
     </div>
-</div>
+
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card shadow p-4 text-center">
+            <i class="bi bi-person-workspace fs-1 text-primary"></i>
+            <h5>Total Electricians</h5>
+            <h3>{{ electricians_count }}</h3>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card shadow p-4 text-center">
+            <i class="bi bi-briefcase fs-1 text-success"></i>
+            <h5>Active Jobs</h5>
+            <h3>{{ jobs_count }}</h3>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-4 col-sm-6">
+        <div class="card shadow p-4 text-center">
+            <i class="bi bi-list-task fs-1 text-dark"></i>
+            <h5>Total Tasks</h5>
+            <h3>{{ tasks_count }}</h3>
+        </div>
+    </div>
+
+{% else %}
+
+    <!-- ELECTRICIAN / CONTRACTOR: 3 cards FULL WIDTH -->
+    <div class="col-lg-4 col-md-4 col-sm-6">
+        <div class="card shadow p-4 text-center">
+            <i class="bi bi-person-workspace fs-1 text-primary"></i>
+            <h5>Total Electricians</h5>
+            <h3>{{ electricians_count }}</h3>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-4 col-sm-6">
+        <div class="card shadow p-4 text-center">
+            <i class="bi bi-briefcase fs-1 text-success"></i>
+            <h5>Active Jobs</h5>
+            <h3>{{ jobs_count }}</h3>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-4 col-sm-6">
+        <div class="card shadow p-4 text-center">
+            <i class="bi bi-list-task fs-1 text-dark"></i>
+            <h5>Total Tasks</h5>
+            <h3>{{ tasks_count }}</h3>
+        </div>
+    </div>
+
 {% endif %}
+
 {% endwith %}
-    
-<!-- Electricians -->
-<div class="col-md-3">
-<div class="card shadow p-4 text-center">
-<i class="bi bi-person-workspace fs-1 text-primary"></i>
-<h5>Total Electricians</h5>
-<h3>{{ electricians_count }}</h3>
-</div>
-</div>
-
-<!-- Jobs -->
-<div class="col-md-3">
-<div class="card shadow p-4 text-center">
-<i class="bi bi-briefcase fs-1 text-success"></i>
-<h5>Active Jobs</h5>
-<h3>{{ jobs_count }}</h3>
-</div>
-</div>
-
-<!-- Total Tasks -->
-<div class="col-md-3">
-<div class="card shadow p-4 text-center">
-<i class="bi bi-list-task fs-1 text-dark"></i>
-<h5>Total Tasks</h5>
-<h3>{{ tasks_count }}</h3>
-</div>
-</div>
 
 </div>
 
-<!-- Task Status Row -->
-<div class="row g-4 mt-2">
+
+<!-- 🔥 TASK STATUS -->
+<div class="row g-4 mt-3">
 
 <div class="col-md-4">
 <div class="card shadow p-4 text-center">
@@ -83,7 +137,8 @@
 
 </div>
 
-<!-- Completion Rate -->
+
+<!-- 🔥 COMPLETION RATE -->
 <div class="row mt-4">
 <div class="col-md-12">
 <div class="card shadow p-4 text-center">
@@ -93,10 +148,11 @@
 <div class="progress mt-3" style="height: 25px;">
     <div class="progress-bar bg-success"
          role="progressbar"
-         style="width: {{ completion_rate }}%;"> <!-- this is not an error -->
+         style="width: {{ completion_rate }}%;">
         {{ completion_rate }}%
-    </div>      
+    </div>
 </div>
+
 </div>
 </div>
 </div>
