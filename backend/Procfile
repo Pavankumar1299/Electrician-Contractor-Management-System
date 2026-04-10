@@ -1,1 +1,1 @@
-web: gunicorn ecms.wsgi:application
+web: gunicorn backend.wsgi:application
