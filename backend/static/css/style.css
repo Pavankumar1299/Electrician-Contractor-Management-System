@@ -2,7 +2,7 @@ body{
     background:#f5f7fb;
     font-family: Arial, sans-serif;
     margin:0;
-    overflow:hidden;
+    overflow-x:hidden;
 }
 
 /* ===== LAYOUT ===== */
@@ -91,7 +91,7 @@ select:disabled, input:disabled, textarea:disabled {
 
     /* Navbar full width */
     .navbar {
-        left: 0;
+        left: 0 !important;
     }
 
     /* Content full width */
