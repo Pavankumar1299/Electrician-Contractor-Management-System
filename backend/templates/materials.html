@@ -2,11 +2,46 @@
 {% block content %}
 
 <h3>Materials</h3>
-
+<div>
+    <div class="aline-left">
 {% if request.user.userprofile.role != "ELECTRICIAN" %}
 <a href="{% url 'add_material' %}" class="btn btn-primary">Add Material</a>
 {% endif %}
+</div>
+    {% if messages %}
+    <div id="alert-box" style="position: fixed; top: 80px;right: 20px; width: 300px; z-index: 9999;">
+        {% for message in messages %}
+        
+        <div class="alert 
+            {% if message.tags == 'success' %} alert-success
+            {% elif message.tags == 'info' %} alert-primary
+            {% elif message.tags == 'error' %} alert-danger
+            {% else %} alert-secondary {% endif %}
+            d-flex align-items-center justify-content-between shadow mb-2">
+            
+            <!-- Icon + Text -->
+            <div>
+                {% if message.tags == 'success' %}
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                {% elif message.tags == 'info' %}
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                {% elif message.tags == 'error' %}
+                    <i class="bi bi-x-circle-fill me-2"></i>
+                {% endif %}
 
+                {{ message }}
+            
+            </div>
+
+        <!-- Close button -->
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+<br><br>
 <table class="table table-striped">
 
 <thead>

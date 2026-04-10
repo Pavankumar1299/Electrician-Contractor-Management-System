@@ -7,6 +7,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFailed
 from django.contrib.auth.decorators import login_required
 from functools import wraps
+from django.contrib import messages
 
 # -------------------- SECURITY DECORATOR --------------------
 def jwt_cookie_required(view_func):
@@ -89,6 +90,8 @@ def register_view(request):
 
         refresh = RefreshToken.for_user(user)
 
+        messages.success(request, "Account created successfully")
+        request.session.save()  # Ensure session is saved before setting cookie
         response = redirect('dashboard')
         response.set_cookie(
             key='access_token',
@@ -112,10 +115,12 @@ def login_view(request):
         user = authenticate(request, username=username_input, password=password_input)
 
         if user is not None:
-            # 🔥 ensure profile exists
+            # ensure profile exists
             UserProfile.objects.get_or_create(user=user)
 
             refresh = RefreshToken.for_user(user)
+
+            messages.success(request, "Logged in successfully")
 
             response = redirect('dashboard')
             response.set_cookie(
@@ -218,6 +223,8 @@ def add_electrician(request):
             email=request.POST['email'],
             experience=request.POST['experience']
         )
+
+        messages.success(request, "Electrician added successfully")
         return redirect('electricians')
 
     return render(request, 'add_electrician.html')
@@ -232,6 +239,7 @@ def edit_electrician(request, id):
         electrician.experience = request.POST['experience']
         electrician.save()
 
+        messages.info(request, "Electrician updated successfully")
         return redirect('electricians')
 
     return render(request, 'edit_electrician.html', {
@@ -245,6 +253,8 @@ def delete_electrician(request, id):
 
     if request.method == 'POST':
         electrician.delete()
+        
+        messages.error(request, "Electrician deleted successfully")
         return redirect('electricians')
 
     return render(request, 'delete_electrician.html', {
@@ -281,12 +291,15 @@ def add_job(request):
             electrician_id=electrician_id if electrician_id else None
         )
 
+        messages.success(request, "Job added successfully")
         return redirect('jobs')
 
     return render(request, 'add_job.html', {
         'electricians': electricians
     })
 
+@jwt_cookie_required
+@role_required(['ADMIN', 'CONTRACTOR'])
 def edit_job(request, id):
     job = get_object_or_404(Job, id=id)
     electricians = Electrician.objects.all()
@@ -299,20 +312,25 @@ def edit_job(request, id):
         job.electrician_id = request.POST.get('electrician') or None
         job.save()
 
+        messages.info(request, "Job updated successfully")
         return redirect('jobs')
-
+    
     return render(request, 'edit_job.html', {
         'job': job,
         'electricians': electricians
     })
 
+@jwt_cookie_required
+@role_required(['ADMIN', 'CONTRACTOR'])
 def delete_job(request, id):
     job = get_object_or_404(Job, id=id)
 
     if request.method == 'POST':
         job.delete()
+        
+        messages.error(request, "Job deleted successfully")
         return redirect('jobs')
-
+    
     return render(request, 'delete_job.html', {'job': job})
 
 
@@ -352,7 +370,11 @@ def add_task(request):
                 user=task.electrician.user,
                 message=f"New task assigned: {task.title}"
             )
+        
+        messages.success(request, "Task added successfully")
+
         return redirect('tasks')
+
 
     return render(request, 'add_task.html', {
         'jobs': jobs,
@@ -373,7 +395,9 @@ def edit_task(request, id):
         task.status = request.POST['status']
         task.save()
 
+        messages.info(request, "Task updated successfully")
         return redirect('tasks')
+
 
     return render(request, 'edit_task.html', {
         'task': task,
@@ -381,12 +405,16 @@ def edit_task(request, id):
         'electricians': electricians
     })
 
+@jwt_cookie_required
 def delete_task(request, id):
     task = get_object_or_404(Task, id=id)
 
     if request.method == 'POST':
         task.delete()
+        
+        messages.error(request, "Task deleted successfully")
         return redirect('tasks')
+
 
     return render(request, 'delete_task.html', {'task': task})
 
@@ -410,10 +438,15 @@ def add_material(request):
             unit=request.POST['unit'],
             job_id=request.POST['job']
         )
+        
+        messages.success(request, "Material added successfully")
         return redirect('materials')
+    
 
     return render(request, 'add_material.html', {'jobs': jobs})
 
+@jwt_cookie_required
+@role_required(['ADMIN', 'CONTRACTOR'])
 def edit_material(request, id):
     material = get_object_or_404(Material, id=id)
     jobs = Job.objects.all()
@@ -426,19 +459,27 @@ def edit_material(request, id):
         material.job_id = request.POST['job']
         material.save()
 
+        messages.info(request, "Material updated successfully")
         return redirect('materials')
+
+    
 
     return render(request, 'edit_material.html', {
         'material': material,
         'jobs': jobs
     })
 
+@jwt_cookie_required
+@role_required(['ADMIN', 'CONTRACTOR'])
 def delete_material(request, id):
     material = get_object_or_404(Material, id=id)
 
     if request.method == 'POST':
         material.delete()
+
+        messages.error(request, "Material deleted successfully")
         return redirect('materials')
+
 
     return render(request, 'delete_material.html', {'material': material})
 
@@ -455,8 +496,8 @@ def profile_page(request):
         'role': profile.role
     })
 
-# @login_required
 @jwt_cookie_required
+# @login_required
 def update_profile(request):
     user = request.user
     profile = user.userprofile
@@ -469,7 +510,9 @@ def update_profile(request):
         user.save()
         profile.save()
 
+        messages.success(request, "Profile updated successfully")
         return redirect('profile')
+
 
     return render(request, 'update_profile.html', {
         'user': user,

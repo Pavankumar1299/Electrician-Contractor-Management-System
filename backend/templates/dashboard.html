@@ -3,6 +3,22 @@
 
 <h3 class="mb-4">Dashboard</h3>
 
+{% if messages %}
+<div id="alert-box" style="position: fixed; top: 80px;right: 20px; width: 300px; z-index: 9999;">
+    {% for message in messages %}
+    <div class="alert alert-success d-flex align-items-center justify-content-between shadow mb-2">
+        
+        <div>
+            <i class="bi bi-check-circle-fill me-2"></i>
+            {{ message }}
+        </div>
+
+    <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <!-- NOTIFICATIONS -->
 {% with role=request.user.userprofile.role %}
 
@@ -157,4 +173,14 @@
 </div>
 </div>
 
+<script>
+setTimeout(function() {
+    let alertBox = document.getElementById("alert-box");
+    if (alertBox) {
+        alertBox.style.transition = "opacity 0.5s ease";
+        alertBox.style.opacity = "0";
+        setTimeout(() => alertBox.remove(), 500);
+    }
+}, 5000);
+</script>
 {% endblock %}

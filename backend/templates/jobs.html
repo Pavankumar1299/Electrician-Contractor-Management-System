@@ -1,15 +1,49 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Jobs</h3>
 
-{% if request.user.userprofile.role != "ELECTRICIAN" %}
-<a href="{% url 'add_job' %}" class="btn btn-primary">Add Job</a>
-{% endif %}
+<h3>Jobs</h3>
+<div>
+    <div class="aline-left">
+        {% if request.user.userprofile.role != "ELECTRICIAN" %}
+        <a href="{% url 'add_job' %}" class="btn btn-primary">Add Job</a>
+        {% endif %}
+    </div>
+    {% if messages %}
+    <div id="alert-box" style="position: fixed; top: 80px;right: 20px; width: 300px; z-index: 9999;">
+        {% for message in messages %}
+        
+        <div class="alert 
+            {% if message.tags == 'success' %} alert-success
+            {% elif message.tags == 'info' %} alert-primary
+            {% elif message.tags == 'error' %} alert-danger
+            {% else %} alert-secondary {% endif %}
+            d-flex align-items-center justify-content-between shadow mb-2">
+            
+            <!-- Icon + Text -->
+            <div>
+                {% if message.tags == 'success' %}
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                {% elif message.tags == 'info' %}
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                {% elif message.tags == 'error' %}
+                    <i class="bi bi-x-circle-fill me-2"></i>
+                {% endif %}
+
+                {{ message }}
+            
+            </div>
+
+        <!-- Close button -->
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
 <br><br>
-<!-- <form method="GET">
-    <input type="text" name="q" placeholder="Search jobs" class="form-control" onchange="this.form.submit()">
-</form> -->
+
 <form method="GET" action="{% url 'jobs' %}" class="d-flex align-items-center gap-2">
     <div style="flex-grow: 1;">
         <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search jobs" class="form-control" onchange="this.form.submit()">
@@ -55,4 +89,14 @@
 
 </table>
 
+<script>
+setTimeout(function() {
+    let alertBox = document.getElementById("alert-box");
+    if (alertBox) {
+        alertBox.style.transition = "opacity 0.5s ease";
+        alertBox.style.opacity = "0";
+        setTimeout(() => alertBox.remove(), 500);
+    }
+}, 5000);
+</script>
 {% endblock %}
