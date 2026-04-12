@@ -26,6 +26,14 @@
 
         <a href="{% url 'dashboard' %}" class="d-block text-white mb-2"><i class="bi bi-speedometer2"></i> Dashboard</a>
 
+        <a href="{% url 'notifications' %}" class="d-block text-white mb-2">
+            <i class="bi bi-bell"></i> Notifications
+
+            {% if unread_count > 0 %}
+            <span class="badge bg-danger">{{ unread_count }}</span>
+            {% endif %}
+        </a>
+
         {% if role|upper == "ADMIN" %}
         <a href="{% url 'electricians' %}" class="d-block text-white mb-2"><i class="bi bi-person-workspace"></i> Electricians</a>
         {% endif %}
@@ -96,6 +104,11 @@ sidebarLinks.forEach(link => {
         }
     });
 });
+
+/*setInterval(() => {
+    location.reload();
+}, 10000);*/
+
 </script>
 </body>
 </html>

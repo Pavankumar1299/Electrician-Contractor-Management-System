@@ -1,96 +1,146 @@
-# Electrician Contractor Management System
+# ⚡ Electrician Contractor Management System
 
-A full-stack web application to manage electricians, contractors, and job workflows efficiently. It provides authentication, job tracking, and dashboard analytics.
+A full-stack web application designed to manage electricians, contractors, and job workflows efficiently.
+It includes authentication, task tracking, notifications, and dashboard analytics.
 
 ---
 
-## Features
+## 🚀 Features
 
-* 🔐 User Authentication (JWT आधारित login/register)
+* 🔐 JWT-based Authentication (Login / Register)
 * 👷 Electrician Management
 * 📋 Job Assignment & Tracking
-* 📊 Dashboard with statistics
-* ✅ Task Management
+* ✅ Task Management System
+* 🔔 Notification System (Role-based)
+* 📊 Dashboard with Real-time Statistics
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Backend**
+### 🔹 Backend
 
 * Django
 * Django REST Framework
 * SimpleJWT
 
-**Frontend**
+### 🔹 Frontend
 
-* HTML, CSS, Bootstrap
+* HTML
+* CSS
+* Bootstrap
 * JavaScript
 
-**Database**
+### 🔹 Database
 
-* MySQL
+* SQLite
 
 ---
 
 ## 📸 Screenshots
 
+### 🏠 Home Page
 
-### Home Page
+<img src="screenshots/index.png" width="50%">
 
-![Home](screenshots/home.png)
+### 🔐 Login Page
 
-### Login Page
+<img src="screenshots/login.png" width="50%">
 
-![Login](screenshots/login.png)
+### 📝 Register Page
 
-### Register Page
+<img src="screenshots/register.png" width="50%">
 
-![Register](screenshots/register.png)
+---
 
-### Dashboard
+### 📊 Dashboard
 
-![Dashboard](screenshots/dashboard.png)
+#### Admin Dashboard
 
-### Electricians Page
+<img src="screenshots/admin_dashboard.png" width="50%">
 
-![Electricians](screenshots/electricians.png)
+#### Electrician Dashboard
 
-### Jobs Page
+<img src="screenshots/ele_dashboard.png" width="50%">
 
-![Jobs](screenshots/jobs.png)
+---
+
+### 👷 Electricians Page
+
+<img src="screenshots/electricians.png" width="50%">
+
+---
+
+### 💼 Jobs Page
+
+<img src="screenshots/jobs.png" width="50%">
+
+---
+
+### ✅ Tasks Page
+
+<img src="screenshots/tasks.png" width="50%">
+<img src="screenshots/add_task.png" width="50%">
+<img src="screenshots/ele_tasks.png" width="50%">
+
+---
+
+### 🔔 Notification Page
+
+<img src="screenshots/admin_notification.png" width="50%">
+<img src="screenshots/ele_notification.png" width="50%">
+
+---
+
+### 📈 Reports Page
+
+<img src="screenshots/reports.png" width="50%">
+
+---
+
+### 👤 Profile Page
+
+<img src="screenshots/profile.png" width="50%">
 
 ---
 
 ## ⚙️ Installation & Setup
 
-### 1. Clone Repository
+### 1️⃣ Clone Repository
 
 ```bash
 git clone https://github.com/Pavankumar1299/Electrician-Contractor-Management-System.git
 cd Electrician-Contractor-Management-System/backend
 ```
 
-### 2. Create Virtual Environment
+---
+
+### 2️⃣ Create Virtual Environment
 
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-### 3. Install Dependencies
+---
+
+### 3️⃣ Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Apply Migrations
+---
+
+### 4️⃣ Apply Migrations
 
 ```bash
 python manage.py migrate
 ```
 
-### 5. Run Server
+---
+
+### 5️⃣ Run Server
 
 ```bash
 python manage.py runserver
@@ -100,7 +150,7 @@ python manage.py runserver
 
 ## 🔑 Authentication (JWT)
 
-After login, you will receive a token.
+After login, you will receive a JWT token.
 
 Use it in requests:
 
@@ -108,12 +158,16 @@ Use it in requests:
 Authorization: Bearer <your_token>
 ```
 
-
 ---
 
 ## 🎯 Future Improvements
 
-* Role-based access (Admin/User)
-* Notifications system
-* Deployment (AWS / Render)
-* UI enhancements
+* 🔔 Real-time notifications (WebSockets)
+* 📱 Responsive UI enhancements
+* ☁️ Deployment (AWS / Render)
+* 📊 Advanced analytics dashboard
+* 🔒 Improved role-based permissions
+
+---
+
+⭐ If you like this project, consider giving it a star on GitHub!

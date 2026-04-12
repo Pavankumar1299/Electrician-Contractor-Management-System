@@ -8,6 +8,8 @@ from rest_framework_simplejwt.exceptions import InvalidToken, AuthenticationFail
 from django.contrib.auth.decorators import login_required
 from functools import wraps
 from django.contrib import messages
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import make_aware
 
 # -------------------- SECURITY DECORATOR --------------------
 def jwt_cookie_required(view_func):
@@ -197,6 +199,11 @@ def dashboard_view(request):
                 })
         # new line end
 
+    unread_count = Notification.objects.filter(
+        user=request.user,
+        is_read=False
+    ).count()
+
     context = {
         'electricians_count': electricians_count,
         'contractors_count': contractors_count,
@@ -212,17 +219,36 @@ def dashboard_view(request):
         'deadline_notifications': deadline_notifications,
 
         'role': role,
+        'unread_count': unread_count,
     }
 
     return render(request, 'dashboard.html', context)
 
 
-# ------ DELETE NOTIFICATION (X button) -------------
+# ------  NOTIFICATION  -------------
+@jwt_cookie_required
+def notifications_page(request):
+    notifications = Notification.objects.filter(
+        user=request.user
+    ).order_by('-created_at')
+
+    return render(request, 'notifications.html', {
+        'notifications': notifications
+    })
+
+@jwt_cookie_required
+def mark_notification_read(request, id):
+    notification = get_object_or_404(Notification, id=id, user=request.user)
+    notification.is_read = True
+    notification.save()
+    return redirect('notifications')
+
 @jwt_cookie_required
 def delete_notification(request, id):
     notification = get_object_or_404(Notification, id=id, user=request.user)
     notification.delete()
-    return redirect('dashboard')
+    return redirect('notifications')
+
 
 # -------------------- ELECTRICIANS --------------------
 @jwt_cookie_required
@@ -383,12 +409,20 @@ def add_task(request):
     electricians = Electrician.objects.all()
 
     if request.method == 'POST':
+
+        deadline = request.POST.get('deadline')
+
+        if deadline:
+            dt = parse_datetime(deadline)
+            deadline = make_aware(dt)
+
         task = Task.objects.create(
             title=request.POST['title'],
             description=request.POST['description'],
             job_id=request.POST['job'],
             electrician_id=request.POST.get('electrician') or None,
-            status=request.POST['status']
+            status=request.POST['status'],
+            deadline=deadline   # ADD THIS
         )
 
         if task.electrician and task.electrician.user:
@@ -396,19 +430,16 @@ def add_task(request):
                 user=task.electrician.user,
                 message=f"New task assigned: {task.title}"
             )
-        print("Notification created for electrician")
+
+        # print("Notification created for electrician")
         messages.success(request, "Task added successfully")
 
         return redirect('tasks')
-
 
     return render(request, 'add_task.html', {
         'jobs': jobs,
         'electricians': electricians
     })
-
-from django.utils.dateparse import parse_datetime
-from django.utils.timezone import make_aware
 
 @jwt_cookie_required
 def edit_task(request, id):
@@ -453,25 +484,34 @@ def edit_task(request, id):
                     user=admin,
                     message=f"Task completed: {task.title} by {task.electrician.name}"
                 )
-            # print("Admin notified")
-            # print("OLD:", old_status)
-            # print("NEW:", request.POST.get('status'))
+            print("Admin notified")
+            print("OLD:", old_status)
+            print("NEW:", request.POST.get('status'))
 
         # 2. TASK UPDATED → ELECTRICIAN
-        if task.electrician and task.electrician.user:
-            Notification.objects.create(
-                user=task.electrician.user,
-                message=f"Task updated: {task.title}"
-            )
-            # print("Electrician updated notified")
-
-        # 3. NEW ASSIGNMENT → ELECTRICIAN
-        if old_electrician != task.electrician_id and task.electrician:
+        # CASE 1: First time assignment (no old electrician)
+        if old_electrician is None and task.electrician:
             Notification.objects.create(
                 user=task.electrician.user,
                 message=f"New task assigned: {task.title}"
             )
-            # print("Electrician assigned notified")
+            # print("First assignment")
+
+        # CASE 2: Electrician changed
+        elif old_electrician != task.electrician_id and task.electrician:
+            Notification.objects.create(
+                user=task.electrician.user,
+                message=f"New task assigned: {task.title}"
+            )
+            # print("Reassigned")
+
+        # CASE 3: Only update (same electrician)
+        elif task.electrician and task.electrician.user:
+            Notification.objects.create(
+                user=task.electrician.user,
+                message=f"Task updated: {task.title}"
+            )
+            # print("Updated only")
 
         messages.info(request, "Task updated successfully")
         return redirect('tasks')
