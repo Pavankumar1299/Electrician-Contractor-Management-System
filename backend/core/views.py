@@ -422,7 +422,7 @@ def add_task(request):
             job_id=request.POST['job'],
             electrician_id=request.POST.get('electrician') or None,
             status=request.POST['status'],
-            deadline=deadline   # ADD THIS
+            deadline=deadline 
         )
 
         if task.electrician and task.electrician.user:
@@ -471,9 +471,7 @@ def edit_task(request, id):
         # SAVE FIRST
         task.save()
 
-        # =========================
-        # 🔔 NOTIFICATIONS
-        # =========================
+        # ============ NOTIFICATIONS= ============
 
         # 1. TASK COMPLETED → ADMIN
         if new_status == "Completed" and old_status != "Completed":
