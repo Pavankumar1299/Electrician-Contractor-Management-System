@@ -174,6 +174,29 @@ def dashboard_view(request):
 
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
 
+    # new line
+    from django.utils import timezone
+    from datetime import timedelta
+
+    # DEADLINE ALERTS (only for electrician)
+    deadline_notifications = []
+
+    if role == 'ELECTRICIAN':
+        upcoming_tasks = tasks.filter(
+            deadline__isnull=False,
+            status__in=['Pending', 'In Progress']
+        )
+
+        for task in upcoming_tasks:
+            time_left = task.deadline - timezone.now()
+
+            if timedelta(0) < time_left <= timedelta(hours=24):
+                deadline_notifications.append({
+                    'message': f"⚠️ Deadline approaching: {task.title}",
+                    'time': "Due soon"
+                })
+        # new line end
+
     context = {
         'electricians_count': electricians_count,
         'contractors_count': contractors_count,
@@ -185,7 +208,10 @@ def dashboard_view(request):
         'completed_tasks': completed_tasks,
 
         'completion_rate': round(completion_rate, 2),
-        'notifications': notifications
+        'notifications': notifications,
+        'deadline_notifications': deadline_notifications,
+
+        'role': role,
     }
 
     return render(request, 'dashboard.html', context)
@@ -370,7 +396,7 @@ def add_task(request):
                 user=task.electrician.user,
                 message=f"New task assigned: {task.title}"
             )
-        
+        print("Notification created for electrician")
         messages.success(request, "Task added successfully")
 
         return redirect('tasks')
@@ -381,6 +407,9 @@ def add_task(request):
         'electricians': electricians
     })
 
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import make_aware
+
 @jwt_cookie_required
 def edit_task(request, id):
     task = get_object_or_404(Task, id=id)
@@ -388,12 +417,61 @@ def edit_task(request, id):
     electricians = Electrician.objects.all()
 
     if request.method == 'POST':
+
+        # STORE OLD VALUES FIRST
+        old_status = task.status
+        new_status = request.POST.get('status')
+        old_electrician = task.electrician_id
+
+        # UPDATE FIELDS
         task.title = request.POST['title']
         task.description = request.POST['description']
         task.job_id = request.POST['job']
         task.electrician_id = request.POST.get('electrician') or None
-        task.status = request.POST['status']
+
+        # SAFE DEADLINE
+        deadline = request.POST.get('deadline')
+        if deadline:
+            dt = parse_datetime(deadline)
+            task.deadline = make_aware(dt)
+
+        task.status = new_status
+
+        # SAVE FIRST
         task.save()
+
+        # =========================
+        # 🔔 NOTIFICATIONS
+        # =========================
+
+        # 1. TASK COMPLETED → ADMIN
+        if new_status == "Completed" and old_status != "Completed":
+            admin_users = User.objects.filter(userprofile__role='ADMIN')
+
+            for admin in admin_users:
+                Notification.objects.create(
+                    user=admin,
+                    message=f"Task completed: {task.title} by {task.electrician.name}"
+                )
+            # print("Admin notified")
+            # print("OLD:", old_status)
+            # print("NEW:", request.POST.get('status'))
+
+        # 2. TASK UPDATED → ELECTRICIAN
+        if task.electrician and task.electrician.user:
+            Notification.objects.create(
+                user=task.electrician.user,
+                message=f"Task updated: {task.title}"
+            )
+            # print("Electrician updated notified")
+
+        # 3. NEW ASSIGNMENT → ELECTRICIAN
+        if old_electrician != task.electrician_id and task.electrician:
+            Notification.objects.create(
+                user=task.electrician.user,
+                message=f"New task assigned: {task.title}"
+            )
+            # print("Electrician assigned notified")
 
         messages.info(request, "Task updated successfully")
         return redirect('tasks')

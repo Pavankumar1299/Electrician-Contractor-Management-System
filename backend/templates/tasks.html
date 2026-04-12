@@ -58,6 +58,7 @@
 <th>Title</th>
 <th>Job</th>
 <th>Electrician</th>
+<th>Deadline</th>
 <th>Status</th>
 <th>Action</th>
 </tr>
@@ -70,6 +71,8 @@
 <td>{{ task.title }}</td>
 <td>{{ task.job.title }}</td>
 <td>{{ task.electrician.name }}</td>
+{% now "Y-m-d H:i:s" as now %}
+<td>{{ task.deadline }}</td>
 <td>
 <span class="badge 
 {% if task.status == 'Completed' %} bg-success

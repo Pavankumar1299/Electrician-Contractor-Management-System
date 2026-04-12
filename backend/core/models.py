@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 # --------------------- USER PROFILES --------------------
 class UserProfile(models.Model):
@@ -95,7 +97,22 @@ class Task(models.Model):
         default='Pending'
     )
 
+    # new field to track if notification has been sent for completion
+    deadline = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    
+
+    def is_overdue(self):
+        return self.deadline and self.deadline < timezone.now()
+    
+    def clean(self):
+        if self.deadline and self.job.deadline:
+            if self.deadline.date() > self.job.deadline:
+                raise ValidationError("Task deadline cannot be exceed job deadline.")
 
     def __str__(self):
         return self.title

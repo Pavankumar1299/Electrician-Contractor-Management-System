@@ -20,37 +20,70 @@
 {% endif %}
 
 <!-- NOTIFICATIONS -->
-{% with role=request.user.userprofile.role %}
-
-{% if role|upper == "ELECTRICIAN" %}
 <h5>Notifications</h5>
 
 <ul class="list-group mb-4">
-{% for n in notifications %}
-<li class="list-group-item d-flex justify-content-between align-items-center">
 
-    <div>
-        {{ n.message }}
-        <br>
-        <small class="text-muted">{{ n.created_at|timesince }} ago</small>
-    </div>
+<!-- 👷 ELECTRICIAN NOTIFICATIONS -->
+{% if role|upper == "ELECTRICIAN" %}
 
-    <!-- ❌ DELETE BUTTON -->
-    <a href="{% url 'delete_notification' n.id %}" 
-       class="btn btn-sm btn-danger">✖</a>
+    <!-- DB Notifications (Assigned / Updated) -->
+    {% for n in notifications %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
 
-</li>
-{% empty %}
-<li class="list-group-item text-center text-muted">
-    No notifications
-</li>
-{% endfor %}
-</ul>
+        <div>
+            {{ n.message }}
+            <br>
+            <small class="text-muted">{{ n.created_at|timesince }} ago</small>
+        </div>
+
+        <a href="{% url 'delete_notification' n.id %}" 
+           class="btn btn-sm btn-danger">✖</a>
+    </li>
+    {% endfor %}
+
+    <!-- ⚠️ Deadline Alerts -->
+    {% for n in deadline_notifications %}
+    <li class="list-group-item bg-warning text-dark">
+        ⚠️ {{ n.message }}
+    </li>
+    {% endfor %}
+
+    {% if not notifications and not deadline_notifications %}
+    <li class="list-group-item text-center text-muted">
+        No notifications
+    </li>
+    {% endif %}
+
 {% endif %}
 
-{% endwith %}
 
-<!-- 🔥 DASHBOARD CARDS -->
+<!-- 👨‍💼 ADMIN NOTIFICATIONS -->
+{% if role|upper == "ADMIN" %}
+
+    {% for n in notifications %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+
+        <div>
+            {{ n.message }}
+            <br>
+            <small class="text-muted">{{ n.created_at|timesince }} ago</small>
+        </div>
+
+        <a href="{% url 'delete_notification' n.id %}" 
+           class="btn btn-sm btn-danger">✖</a>
+    </li>
+    {% empty %}
+    <li class="list-group-item text-center text-muted">
+        No notifications
+    </li>
+    {% endfor %}
+
+{% endif %}
+
+</ul>
+
+<!--  DASHBOARD CARDS -->
 <div class="row g-4">
 
 {% with role=request.user.userprofile.role %}
@@ -124,7 +157,7 @@
 </div>
 
 
-<!-- 🔥 TASK STATUS -->
+<!-- TASK STATUS -->
 <div class="row g-4 mt-3">
 
 <div class="col-md-4">
@@ -154,7 +187,7 @@
 </div>
 
 
-<!-- 🔥 COMPLETION RATE -->
+<!--  COMPLETION RATE -->
 <div class="row mt-4">
 <div class="col-md-12">
 <div class="card shadow p-4 text-center">

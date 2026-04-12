@@ -58,6 +58,7 @@ body{
     border:none;
     border-radius:10px;
     height: 100%;
+    transition: all 0.3s ease;
 }
 
 /* ===== TABLE ===== */
@@ -104,4 +105,9 @@ select:disabled, input:disabled, textarea:disabled {
         width: 100%;
         padding: 15px;
     }
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 }
