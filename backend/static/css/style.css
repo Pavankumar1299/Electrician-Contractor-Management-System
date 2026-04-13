@@ -80,7 +80,7 @@ select:disabled, input:disabled, textarea:disabled {
     #sidebar-wrapper {
         position: fixed;
         left: -240px;
-        top: 0;
+        top: 30px;
         height: 100%;
         z-index: 1000;
     }
@@ -105,9 +105,28 @@ select:disabled, input:disabled, textarea:disabled {
         width: 100%;
         padding: 15px;
     }
+
+    .card{
+        border:none;
+        border-radius:10px;
+        height: 100%;
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
 }
 
 .card:hover {
     transform: translateY(-6px);
     box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 }
+
+#page-content-wrapper {
+    width: 100%;
+    overflow-x: hidden;
+}
+

@@ -1,13 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Materials</h3>
-<div>
+<div class="d-flex align-items-center justify-content-between mb-3">
     <div class="aline-left">
-{% if request.user.userprofile.role != "ELECTRICIAN" %}
-<a href="{% url 'add_material' %}" class="btn btn-primary">Add Material</a>
-{% endif %}
+        <h3>Materials</h3>
+    </div>
+    <div class="aline-right">
+        {% if request.user.userprofile.role != "ELECTRICIAN" %}
+        <a href="{% url 'add_material' %}" class="btn btn-primary"> +Add Material</a>
+        {% endif %}
+    </div>
 </div>
+<div>
     {% if messages %}
     <div id="alert-box" style="position: fixed; top: 80px;right: 20px; width: 300px; z-index: 9999;">
         {% for message in messages %}
@@ -42,6 +46,8 @@
     {% endif %}
 </div>
 <br><br>
+
+<div class="table-responsive">
 <table class="table table-striped">
 
 <thead>
@@ -81,5 +87,6 @@
 </tbody>
 
 </table>
+</div>
 
 {% endblock %}

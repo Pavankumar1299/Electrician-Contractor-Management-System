@@ -281,6 +281,8 @@ def add_electrician(request):
 
     return render(request, 'add_electrician.html')
 
+@jwt_cookie_required
+@role_required(['ADMIN'])
 def edit_electrician(request, id):
     electrician = get_object_or_404(Electrician, id=id)
 
