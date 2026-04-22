@@ -73,7 +73,7 @@
                                 <span class="text-muted fst-italic">Unassigned</span>
                             {% endif %}
                         </td>
-                        <td>{{ task.deadline|date:"M d, Y H:i" }}</td>
+                        <td>{{ task.deadline|date:"M d, Y" }}</td>
                         <td>
                             {% if task.status == 'Completed' %}
                                 <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Completed</span>

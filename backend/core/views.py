@@ -12,6 +12,10 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timezone import make_aware
 from django.utils import timezone
 from datetime import timedelta
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import F
+
+
 
 # -------------------- SECURITY DECORATOR --------------------
 def jwt_cookie_required(view_func):
@@ -558,7 +562,38 @@ def delete_task(request, id):
 @jwt_cookie_required
 def materials_page(request):
     materials = Material.objects.select_related('job').all()
-    return render(request, 'materials.html', {'materials': materials})
+    jobs = Job.objects.all() # Fetch jobs for the dropdown filter
+
+    # 1. Get filter parameters from the URL
+    search_query = request.GET.get('q', '')
+    job_filter = request.GET.get('job', '')
+    stock_filter = request.GET.get('stock', '')
+
+    # 2. Apply Text Search
+    if search_query:
+        materials = materials.filter(name__icontains=search_query)
+
+    # 3. Apply Job Filter
+    if job_filter:
+        materials = materials.filter(job_id=job_filter)
+
+    # 4. Apply Stock Status Filter
+    if stock_filter == 'out_of_stock':
+        # Remaining is 0 or less
+        materials = materials.filter(quantity__lte=F('used_quantity'))
+    elif stock_filter == 'low_stock':
+        # Remaining is greater than 0 but less than or equal to 10
+        materials = materials.annotate(
+            remaining_stock=F('quantity') - F('used_quantity')
+        ).filter(remaining_stock__gt=0, remaining_stock__lte=10)
+    elif stock_filter == 'in_stock':
+        # Remaining is strictly greater than 0
+        materials = materials.filter(quantity__gt=F('used_quantity'))
+
+    return render(request, 'materials.html', {
+        'materials': materials,
+        'jobs': jobs, # Pass jobs to the template for the dropdown
+    })
 
 @jwt_cookie_required
 @role_required(['ADMIN', 'CONTRACTOR'])
@@ -690,3 +725,64 @@ def reports_page(request):
     }
 
     return render(request, 'reports.html', context)
+
+
+# ----------- ADMIN - VIEW AS (IMPERSONATION) ------------
+# Add this at the top of views.py if not already there
+
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def view_as_user(request, id):
+    electrician = get_object_or_404(Electrician, id=id)
+    target_user = electrician.user
+
+    # Safety check: Ensure the electrician actually has a login account
+    if not target_user:
+        messages.error(request, f"{electrician.name} does not have a user account set up yet.")
+        return redirect('electricians')
+
+    # Save the original Admin's user ID in the session
+    request.session['original_admin_id'] = request.user.id
+
+    # Generate a new token for the electrician
+    refresh = RefreshToken.for_user(target_user)
+
+    messages.success(request, f"You are now viewing the system as {electrician.name}")
+    
+    response = redirect('dashboard')
+    response.set_cookie(
+        key='access_token',
+        value=str(refresh.access_token),
+        httponly=True,
+        samesite='Lax'
+    )
+    return response
+
+@jwt_cookie_required
+def stop_viewing_as(request):
+    # Check if they are actually impersonating someone
+    if 'original_admin_id' not in request.session:
+        return redirect('dashboard')
+
+    # Get the original admin user
+    original_admin_id = request.session['original_admin_id']
+    admin_user = get_object_or_404(User, id=original_admin_id)
+
+    # Clear the session variable so the banner disappears
+    del request.session['original_admin_id']
+
+    # Generate a fresh token for the Admin
+    refresh = RefreshToken.for_user(admin_user)
+
+    messages.info(request, "Welcome back. Restored Admin session.")
+    
+    response = redirect('electricians')
+    response.set_cookie(
+        key='access_token',
+        value=str(refresh.access_token),
+        httponly=True,
+        samesite='Lax'
+    )
+    return response
+
+

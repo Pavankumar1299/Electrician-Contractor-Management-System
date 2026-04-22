@@ -57,6 +57,7 @@
                         </td>
                         <td><span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3">{{ electrician.experience }} Years</span></td>
                         <td class="text-end pe-4">
+                            <a href="{% url 'view_as_user' electrician.id %}" class="btn btn-sm btn-light text-success" data-bs-toggle="tooltip" title="View As this User"><i class="bi bi-box-arrow-in-right"></i></a>
                             <a href="{% url 'edit_electrician' electrician.id %}" class="btn btn-sm btn-light text-primary" data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil-square"></i></a>
                             <a href="{% url 'delete_electrician' electrician.id %}" class="btn btn-sm btn-light text-danger" data-bs-toggle="tooltip" title="Delete"><i class="bi bi-trash"></i></a>
                         </td>

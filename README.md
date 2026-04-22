@@ -71,24 +71,32 @@ It includes authentication, task tracking, notifications, and dashboard analytic
 
 ---
 
+### 👷 View as Electrician
+
+<img src="screenshots/view_as.png" width="50%">
+
+---
+
 ### 💼 Jobs Page
 
 <img src="screenshots/jobs.png" width="50%">
+<img src="screenshots/create_job.png" width="50%">
 
 ---
 
 ### ✅ Tasks Page
 
 <img src="screenshots/tasks.png" width="50%">
-<img src="screenshots/add_task.png" width="50%">
+<img src="screenshots/create_task.png" width="50%">
+<img src="screenshots/edit_task.png" width="50%">
 <img src="screenshots/ele_tasks.png" width="50%">
 
 ---
 
 ### 🔔 Notification Page
 
-<img src="screenshots/admin_notification.png" width="50%">
-<img src="screenshots/ele_notification.png" width="50%">
+<img src="screenshots/admin_notify.png" width="50%">
+<img src="screenshots/ele_notify.png" width="50%">
 
 ---
 
