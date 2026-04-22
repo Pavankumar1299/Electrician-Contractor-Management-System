@@ -1,56 +1,73 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Edit Job</h3>
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
 
-<form method="POST">
-{% csrf_token %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-6">
+        
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'jobs' %}" class="btn btn-light rounded-circle me-3"><i class="bi bi-arrow-left"></i></a>
+            <h3 class="fw-bold text-dark m-0">Edit Job</h3>
+        </div>
 
-<div class="mb-3">
-<label>Title</label>
-<input type="text" name="title" class="form-control" 
-       value="{{ job.title }}" required>
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark">Job Title</label>
+                        <input type="text" name="title" class="form-control bg-light border-0" value="{{ job.title }}" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark">Description</label>
+                        <textarea name="description" class="form-control bg-light border-0" rows="3">{{ job.description }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-semibold text-dark">Location</label>
+                            <input type="text" name="location" class="form-control bg-light border-0" value="{{ job.location }}" required>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-semibold text-dark">Deadline</label>
+                            <input type="date" name="deadline" class="form-control bg-light border-0" value="{{ job.deadline|date:'Y-m-d' }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark">Assign Electrician</label>
+                        <select name="electrician" class="form-select bg-light border-0" required>
+                            <option value="" disabled>-- Select --</option>
+                            {% for e in electricians %}
+                                <option value="{{ e.id }}" {% if job.electrician and job.electrician.id == e.id %}selected{% endif %}>{{ e.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label fw-semibold text-dark">Job Image</label>
+                        <input type="file" name="image" class="form-control bg-light border-0" accept="image/*">
+                        {% if job.image %}
+                            <small class="d-block mt-2 text-success">
+                                <i class="bi bi-image"></i> Current Image: <a href="{{ job.image.url }}" target="_blank">View Image</a>
+                            </small>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'jobs' %}" class="btn btn-light px-4">Cancel</a>
+                        <button type="submit" class="btn btn-warning px-4 shadow-sm"><i class="bi bi-pencil-square me-1"></i> Update Job</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div class="mb-3">
-<label>Description</label>
-<textarea name="description" class="form-control">{{ job.description }}</textarea>
-</div>
-
-<div class="mb-3">
-<label>Location</label>
-<input type="text" name="location" class="form-control" 
-       value="{{ job.location }}" required>
-</div>
-
-<div class="mb-3">
-<label>Deadline</label>
-<input type="date" name="deadline" class="form-control" 
-       value="{{ job.deadline|date:'Y-m-d' }}" required>
-</div>
-
-<div class="mb-3">
-<label>Assign Electrician</label>
-<select name="electrician" class="form-control" required>
-
-<option value="" disabled selected>-- Select --</option>
-
-{% for e in electricians %}
-<option value="{{ e.id }}" 
-{% if job.electrician and job.electrician.id == e.id %}
-selected
-{% endif %}
->
-{{ e.name }}
-</option>
-{% endfor %}
-
-</select>
-</div>
-
-<button class="btn btn-warning">Update</button>
-<a href="{% url 'jobs' %}" class="btn btn-secondary">Cancel</a>
-
-</form>
-
 {% endblock %}

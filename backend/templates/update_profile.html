@@ -1,40 +1,71 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Profile</h3>
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
 
-<div class="card shadow p-4" style="max-width: 500px;">
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-6">
+        
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'profile' %}" class="btn btn-light rounded-circle me-3"><i class="bi bi-arrow-left"></i></a>
+            <h3 class="fw-bold text-dark m-0">Edit Profile</h3>
+        </div>
 
-<form method="POST">
-{% csrf_token %}
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
 
-<div class="mb-3">
-<label>Username</label>
-<input type="text" name="username" class="form-control" value="{{ user.username }}">
-</div>
+                    <div class="mb-4 text-center">
+                        {% if request.user.userprofile.profile_picture %}
+                            <img src="{{ request.user.userprofile.profile_picture.url }}" class="rounded-circle shadow-sm mb-3" style="width: 80px; height: 80px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary text-white rounded-circle d-inline-flex justify-content-center align-items-center shadow-sm mb-3" style="width: 80px; height: 80px; font-size: 28px;">
+                                {{ user.username|make_list|first|upper }}
+                            </div>
+                        {% endif %}
+                        
+                        <div>
+                            <label class="form-label fw-semibold text-dark">Change Profile Picture</label>
+                            <input type="file" name="profile_picture" class="form-control bg-light border-0" accept="image/*">
+                        </div>
+                    </div>
 
-<div class="mb-3">
-<label>Email</label>
-<input type="email" name="email" class="form-control" value="{{ user.email }}">
-</div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark">Username</label>
+                        <input type="text" name="username" class="form-control bg-light border-0" value="{{ user.username }}" required>
+                    </div>
 
-<div class="mb-3">
-<label>Phone</label>
-<input type="text" name="phone" class="form-control" value="{{ request.user.userprofile.phone }}">
-</div>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-semibold text-dark">Email Address</label>
+                            <input type="email" name="email" class="form-control bg-light border-0" value="{{ user.email }}" required>
+                        </div>
 
-<div class="mb-3">
-<label>Role</label>
-<input type="text" class="form-control" 
-       value="{{ request.user.userprofile.role }}" readonly>
-</div>
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-semibold text-dark">Phone Number</label>
+                            <input type="text" name="phone" class="form-control bg-light border-0" value="{{ request.user.userprofile.phone }}" required>
+                        </div>
+                    </div>
 
-<button class="btn btn-primary">Update</button>
-<a href="{% url 'profile' %}" class="btn btn-secondary">Cancel</a>
+                    <div class="mb-5">
+                        <label class="form-label fw-semibold text-dark">System Role</label>
+                        <input type="text" class="form-control bg-secondary bg-opacity-10 border-0 text-muted" value="{{ request.user.userprofile.role }}" readonly>
+                        <small class="text-muted"><i class="bi bi-info-circle"></i> Contact an administrator to change your role.</small>
+                    </div>
 
-
-</form>
-
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'profile' %}" class="btn btn-light px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="bi bi-save me-1"></i> Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 {% endblock %}

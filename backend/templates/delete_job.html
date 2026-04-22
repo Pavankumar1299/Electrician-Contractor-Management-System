@@ -1,37 +1,48 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+    .row {
+        margin-top: 500px;
+    }
+</style>
 
-<h3 class="text-danger">Delete Job</h3>
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 col-lg-6 text-center">
+        
+        <div class="card shadow border-0 rounded-4 overflow-hidden">
+            <div class="bg-danger p-4">
+                <i class="bi bi-exclamation-triangle-fill text-white" style="font-size: 3rem;"></i>
+            </div>
+            
+            <div class="card-body p-5">
+                <h3 class="fw-bold text-dark mb-3">Delete this Job?</h3>
+                <p class="text-muted mb-4">This action cannot be undone. All tasks and materials associated with this job may be affected.</p>
+                
+                <div class="bg-light rounded-3 p-3 text-start mb-4">
+                    <div class="mb-2"><strong>Title:</strong> <span class="text-dark">{{ job.title }}</span></div>
+                    <div class="mb-2"><strong>Location:</strong> <span class="text-dark">{{ job.location }}</span></div>
+                    <div class="mb-2"><strong>Deadline:</strong> <span class="text-dark">{{ job.deadline }}</span></div>
+                    <div><strong>Electrician:</strong> 
+                        <span class="text-dark">
+                            {% if job.electrician %}{{ job.electrician.name }}{% else %}Not Assigned{% endif %}
+                        </span>
+                    </div>
+                </div>
 
-<div class="card shadow p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'jobs' %}" class="btn btn-light px-4 py-2">Keep Job</a>
+                        <button type="submit" class="btn btn-danger px-4 py-2 shadow-sm"><i class="bi bi-trash3 me-1"></i> Yes, Delete</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
-    <p>Are you sure you want to delete this job?</p>
-
-    <ul>
-        <li><strong>Title:</strong> {{ job.title }}</li>
-        <li><strong>Location:</strong> {{ job.location }}</li>
-        <li><strong>Deadline:</strong> {{ job.deadline }}</li>
-        <li><strong>Electrician:</strong> 
-            {% if job.electrician %}
-                {{ job.electrician.name }}
-            {% else %}
-                Not Assigned
-            {% endif %}
-        </li>
-    </ul>
-
-    <form method="POST">
-        {% csrf_token %}
-
-        <button type="submit" class="btn btn-danger">
-            Yes, Delete
-        </button>
-
-        <a href="{% url 'jobs' %}" class="btn btn-secondary">
-            Cancel
-        </a>
-    </form>
-
+    </div>
 </div>
 
 {% endblock %}

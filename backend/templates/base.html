@@ -18,63 +18,96 @@
 <div class="d-flex" id="wrapper">
 
     <!-- Sidebar -->
-    <div class="sidebar text-white p-3" id="sidebar-wrapper">
-        <h4 class="text-center">ECMS</h4>
-        <hr>
+    <div id="sidebar-wrapper">
+        <div class="sidebar-heading d-flex align-items-center">
+            <i class="bi bi-lightning-charge-fill text-warning me-2"></i> ECMS
+        </div>
+        
+        <div class="sidebar-nav d-flex flex-column h-80">
+            {% with role=request.user.userprofile.role %}
+            
+            <a href="{% url 'dashboard' %}" class="nav-link text-decoration-none">
+                <i class="bi bi-grid-1x2"></i> Dashboard
+            </a>
 
-        {% with role=request.user.userprofile.role %}
+            <a href="{% url 'notifications' %}" class="nav-link text-decoration-none d-flex justify-content-between align-items-center">
+                <div><i class="bi bi-bell"></i> Notifications</div>
+                {% if unread_count and unread_count > 0 %}
+                    <span class="badge bg-danger rounded-pill">{{ unread_count }}</span>
+                {% elif notification_count > 0 %}
+                    <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
+                {% endif %}
+            </a>
 
-        <a href="{% url 'dashboard' %}" class="d-block text-white mb-2"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <small class="text-uppercase fw-bold mb-2 ms-3" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(164, 202, 241, 0.882); margin-top: 10px;">Management ↓</small>
 
-        <a href="{% url 'notifications' %}" class="d-block text-white mb-2">
-            <i class="bi bi-bell"></i> Notifications
-
-            {% if notification_count > 0 %}
-                <span class="badge bg-danger">{{ notification_count }}</span>
+            {% if role|upper == "ADMIN" %}
+            <a href="{% url 'electricians' %}" class="nav-link text-decoration-none">
+                <i class="bi bi-people"></i> Electricians
+            </a>
             {% endif %}
-        </a>
 
-        {% if role|upper == "ADMIN" %}
-        <a href="{% url 'electricians' %}" class="d-block text-white mb-2"><i class="bi bi-person-workspace"></i> Electricians</a>
-        {% endif %}
+            {% if role|upper == "ADMIN" or role|upper == "CONTRACTOR" %}
+            <a href="{% url 'jobs' %}" class="nav-link text-decoration-none">
+                <i class="bi bi-briefcase"></i> Jobs
+            </a>
+            <a href="{% url 'materials' %}" class="nav-link text-decoration-none">
+                <i class="bi bi-box-seam"></i> Inventory
+            </a>
+            {% endif %}
 
-        {% if role|upper == "ADMIN" or role|upper == "CONTRACTOR" %}
-        <a href="{% url 'jobs' %}" class="d-block text-white mb-2"><i class="bi bi-briefcase"></i> Jobs</a>
-        <a href="{% url 'materials' %}" class="d-block text-white mb-2"><i class="bi bi-box-seam"></i> Materials</a>
-        {% endif %}
+            <a href="{% url 'tasks' %}" class="nav-link text-decoration-none">
+                <i class="bi bi-list-check"></i> Tasks
+            </a>
 
-        <a href="{% url 'tasks' %}" class="d-block text-white mb-2"><i class="bi bi-list-task"></i> Tasks</a>
+            {% if role|upper == "ADMIN" %}
+            <a href="{% url 'reports' %}" class="nav-link text-decoration-none">
+                <i class="bi bi-graph-up"></i> Reports
+            </a>
+            {% endif %}
 
-        {% if role|upper == "ADMIN" %}
-        <a href="{% url 'reports' %}" class="d-block text-white mb-2"><i class="bi bi-bar-chart"></i> Reports</a>
-        {% endif %}
+            <div class="pt-4 border-top border-secondary border-opacity-25">
+                <a href="{% url 'profile' %}" class="nav-link text-decoration-none">
+                    <i class="bi bi-person-circle"></i> Profile Settings
+                </a>
+                <a href="{% url 'logout' %}" class="nav-link text-decoration-none text-danger mt-1 hover-danger">
+                    <i class="bi bi-box-arrow-right"></i> Sign Out
+                </a>
+            </div>
 
-        <a href="{% url 'profile' %}" class="d-block text-white mb-2"><i class="bi bi-person"></i> Profile</a>
-
-        {% endwith %}
-
-        <a href="{% url 'logout' %}" class="text-danger d-block mt-3"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            {% endwith %}
+        </div>
     </div>
 
     <!-- Page Content -->
     <div id="page-content-wrapper" class="w-100 flex-grow-1 d-flex flex-column">
-            <nav class="navbar navbar-light bg-white shadow-sm px-4 flex-wrap">
+            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4">
+            <div class="d-flex align-items-center justify-content-between w-100">
+                
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-light border-0 d-md-none me-3" id="menu-toggle">
+                        <i class="bi bi-list fs-4"></i>
+                    </button>
+                    <span class="fw-bold text-dark fs-5 d-none d-md-block">Workspace</span>
+                </div>
 
-                <!-- Hamburger -->
-                <button class="btn btn-dark d-md-none me-2" id="menu-toggle">☰</button>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-end d-none d-sm-block">
+                        <div class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">{{ request.user.username }}</div>
+                        <div class="text-muted small" style="font-size: 0.75rem;">{{ request.user.userprofile.role }}</div>
+                    </div>
+                    
+                    {% if request.user.userprofile.profile_picture %}
+                        <img src="{{ request.user.userprofile.profile_picture.url }}" class="rounded-circle shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 40px; height: 40px;">
+                            {{ request.user.username|make_list|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
 
-                <!-- Title -->
-                <span class="navbar-brand d-md-none">ECMS</span>
-                <span class="navbar-brand d-none d-md-inline">
-                    Electrician Contractor Management System
-                </span>
-
-                <!-- Welcome text -->
-                <p class="mb-0 w-100 text-center text-md-end mt-2 mt-md-0">
-                    Welcome, {{ request.user.username }} ({{ request.user.userprofile.role }})
-                </p>
-
-            </nav>
+            </div>
+        </nav>
 
         <div class="container-area p-4">
             {% block content %}{% endblock %}
@@ -84,30 +117,23 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-const toggleBtn = document.getElementById("menu-toggle");
-const wrapper = document.getElementById("wrapper");
-
-// Toggle sidebar
-toggleBtn.addEventListener("click", function () {
-    wrapper.classList.toggle("toggled");
-});
-
-// Auto close on mobile after clicking a link
-const sidebarLinks = document.querySelectorAll("#sidebar-wrapper a");
-
-sidebarLinks.forEach(link => {
-    link.addEventListener("click", () => {
-        if (window.innerWidth <= 768) {
-            wrapper.classList.remove("toggled");
-        }
+    // Sidebar Toggle Script
+    document.getElementById("menu-toggle").addEventListener("click", function(e) {
+        e.preventDefault();
+        document.getElementById("wrapper").classList.toggle("toggled");
     });
-});
 
-/*setInterval(() => {
-    location.reload();
-}, 10000);*/
-
+    // Close sidebar on mobile when clicking a link
+    if (window.innerWidth <= 768) {
+        const links = document.querySelectorAll('.nav-link');
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById("wrapper").classList.remove("toggled");
+            });
+        });
+    }
 </script>
 </body>
 </html>

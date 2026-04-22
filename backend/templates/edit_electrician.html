@@ -1,35 +1,55 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Edit Electrician</h3>
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
 
-<form method="POST">
-    {% csrf_token %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-6">
+        
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'electricians' %}" class="btn btn-light rounded-circle me-3"><i class="bi bi-arrow-left"></i></a>
+            <h3 class="fw-bold text-dark m-0">Edit Electrician</h3>
+        </div>
 
-    <div class="mb-3">
-        <label>Name</label>
-        <input type="text" name="name" class="form-control" value="{{ electrician.name }}">
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark">Full Name</label>
+                        <input type="text" name="name" class="form-control bg-light border-0" value="{{ electrician.name }}" required>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-semibold text-dark">Phone Number</label>
+                            <input type="text" name="phone" class="form-control bg-light border-0" value="{{ electrician.phone }}" required>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label fw-semibold text-dark">Experience (Years)</label>
+                            <input type="number" name="experience" class="form-control bg-light border-0" value="{{ electrician.experience }}" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label fw-semibold text-dark">Email Address</label>
+                        <input type="email" name="email" class="form-control bg-light border-0" value="{{ electrician.email }}" required>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'electricians' %}" class="btn btn-light px-4">Cancel</a>
+                        <button type="submit" class="btn btn-warning px-4 shadow-sm"><i class="bi bi-pencil-square me-1"></i> Update Profile</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label>Phone</label>
-        <input type="text" name="phone" class="form-control" value="{{ electrician.phone }}">
-    </div>
-
-    <div class="mb-3">
-        <label>Email</label>
-        <input type="email" name="email" class="form-control" value="{{ electrician.email }}">
-    </div>
-
-    <div class="mb=3">
-        <label>Experience (years)</label>
-        <input type="number" name="experience" class="form-control" value="{{ electrician.experience }}">
-    </div>
-    <br>
-
-    <button type="submit" class="btn btn-warning">Update</button>
-    <a href="{% url 'electricians' %}" class="btn btn-secondary">Cancel</a>
-
-</form>
+</div>
 
 {% endblock %}

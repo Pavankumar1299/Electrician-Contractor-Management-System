@@ -1,138 +1,109 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Edit Task</h3>
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
 
-<form method="POST">
-{% csrf_token %}
-{% with role=request.user.userprofile.role %}
-{% if role|upper == "ADMIN" %}
-<div class="mb-3">
-<label>Title</label>
-<input type="text" name="title" class="form-control" 
-       value="{{ task.title }}" required>
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-6">
+        
+        <div class="d-flex align-items-center mb-4">
+            <a href="{% url 'tasks' %}" class="btn btn-light rounded-circle me-3"><i class="bi bi-arrow-left"></i></a>
+            <h3 class="fw-bold text-dark m-0">Edit Task</h3>
+        </div>
+
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% with role=request.user.userprofile.role %}
+                    {% if role|upper == "ADMIN" %}
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">Task Title</label>
+                            <input type="text" name="title" class="form-control bg-light border-0" value="{{ task.title }}" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">Description</label>
+                            <textarea name="description" class="form-control bg-light border-0" rows="3">{{ task.description }}</textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold text-dark">Select Job</label>
+                                <select name="job" class="form-select bg-light border-0" required>
+                                    {% for job in jobs %}
+                                        <option value="{{ job.id }}" {% if task.job.id == job.id %} selected {% endif %}>{{ job.title }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-4">
+                                <label class="form-label fw-semibold text-dark">Task Deadline</label>
+                                <input type="datetime-local" name="deadline" value="{{ task.deadline|date:'Y-m-d\TH:i' }}" class="form-control bg-light border-0">
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">Assign Electrician</label>
+                            <select name="electrician" class="form-select bg-light border-0" required>
+                                <option value="" disabled>-- Select --</option>
+                                {% for e in electricians %}
+                                    <option value="{{ e.id }}" {% if task.electrician and task.electrician.id == e.id %} selected {% endif %}>{{ e.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                    {% else %}
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">Task Title</label>
+                            <input type="text" class="form-control bg-light border-0 text-muted" value="{{ task.title }}" disabled>
+                            <input type="hidden" name="title" value="{{ task.title }}">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">Description</label>
+                            <textarea class="form-control bg-light border-0 text-muted" disabled>{{ task.description }}</textarea>
+                            <input type="hidden" name="description" value="{{ task.description }}">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-dark">Task Deadline</label>
+                            <input type="datetime-local" class="form-control bg-light border-0 text-muted" value="{{ task.deadline|date:'Y-m-d\TH:i' }}" disabled>
+                            <input type="hidden" name="deadline" value="{{ task.deadline|date:'Y-m-d\TH:i' }}">
+                        </div>
+                        <input type="hidden" name="job" value="{{ task.job.id }}">
+                        <input type="hidden" name="electrician" value="{{ task.electrician.id }}">
+                    {% endif %}
+                    {% endwith %}
+
+                    <hr class="text-muted opacity-25 my-4">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-dark">Task Status</label>
+                        <select name="status" class="form-select bg-light border-0">
+                            <option value="Pending" {% if task.status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                            <option value="Completed" {% if task.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="form-label fw-semibold text-dark">Upload Task Report (Optional)</label>
+                        <input type="file" name="report_file" class="form-control bg-light border-0" accept=".pdf,.doc,.docx,.txt,.png,.jpg">
+                        {% if task.report_file %}
+                            <small class="d-block mt-2 text-success">
+                                <i class="bi bi-file-earmark-text"></i> Current Report: <a href="{{ task.report_file.url }}" target="_blank">View/Download</a>
+                            </small>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'tasks' %}" class="btn btn-light px-4">Cancel</a>
+                        <button type="submit" class="btn btn-warning px-4 shadow-sm"><i class="bi bi-pencil-square me-1"></i> Update Task</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div class="mb-3">
-<label>Description</label>
-<textarea name="description" class="form-control">
-{{ task.description }}
-</textarea>
-</div>
-
-<div class="mb-3">
-<label>Select Job</label>
-<select name="job" class="form-control" required>
-<option value="" disabled selected>-- Select --</option>
-{% for job in jobs %}
-<option value="{{ job.id }}"
-{% if task.job.id == job.id %} selected {% endif %}
->
-{{ job.title }}
-</option>
-{% endfor %}
-
-</select>
-</div>
-
-<div class="mb-3">
-<label>Assign Electrician</label>
-<select name="electrician" class="form-control" required>
-
-<option value="" disabled selected>-- Select --</option>
-
-{% for e in electricians %}
-<option value="{{ e.id }}"
-{% if task.electrician and task.electrician.id == e.id %} selected {% endif %}
->
-{{ e.name }}
-</option>
-{% endfor %}
-
-</select>
-</div>
-
-<div class="mb-3">
-<label>Task Deadline</label>
-<input type="datetime-local" name="deadline" value="{{task.deadline|date:'Y-m-d\\TH:i'}}" class="form-control">
-</div>
-
-{% else %}
-<div class="mb-3">
-<label>Title</label>
-<input type="text" name="title" class="form-control" 
-       value="{{ task.title }}" required readonly>
-</div>
-
-<div class="mb-3">
-<label>Description</label>
-<textarea name="description" class="form-control" required readonly>
-{{ task.description }}
-</textarea>
-</div>
-
-<div class="mb-3">
-<label>Task Deadline</label>
-<input type="datetime-local" name="deadline" value="{{task.deadline|date:'Y-m-d\\TH:i'}}" class="form-control" readonly>
-<input type="hidden" name="deadline" 
-       value="{{ task.deadline|date:'Y-m-d\\TH:i' }}">
-</div>
-
-<div class="mb-3">
-<label>Select Job</label>
-<select name="job" class="form-control" disabled>
-<option value="" disabled selected>-- Select --</option>
-{% for job in jobs %}
-<option value="{{ job.id }}"
-{% if task.job.id == job.id %} selected {% endif %}
->
-{{ job.title }}
-</option>
-{% endfor %}
-
-</select>
-<input type="hidden" name="job" value="{{ task.job.id }}">
-</div>
-
-<div class="mb-3">
-<label>Assign Electrician</label>
-<select name="electrician" class="form-control" required disabled>
-<option value="" disabled selected>-- Select --</option>
-{% for e in electricians %}
-<option value="{{ e.id }}"
-{% if task.electrician and task.electrician.id == e.id %} selected {% endif %}
->
-{{ e.name }}
-</option>
-{% endfor %}
-</select>
-<input type="hidden" name="electrician" value="{{ task.electrician.id }}">
-</div>
-{% endif %}
-{% endwith %}
-
-<div class="mb-3">
-<label>Status</label>
-<select name="status" class="form-control">
-
-<option value="Pending" {% if task.status == 'Pending' %}selected{% endif %}>
-Pending
-</option>
-
-<option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>
-In Progress
-</option>
-
-<option value="Completed" {% if task.status == 'Completed' %}selected{% endif %}>
-Completed
-</option>
-
-</select>
-</div>
-
-<button class="btn btn-warning">Update</button>
-<a href="{% url 'tasks' %}" class="btn btn-secondary">Cancel</a>
-
-</form>
-
 {% endblock %}

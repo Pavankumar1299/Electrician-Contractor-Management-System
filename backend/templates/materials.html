@@ -1,92 +1,61 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<div class="d-flex align-items-center justify-content-between mb-3">
-    <div class="aline-left">
-        <h3>Materials</h3>
-    </div>
-    <div class="aline-right">
-        {% if request.user.userprofile.role != "ELECTRICIAN" %}
-        <a href="{% url 'add_material' %}" class="btn btn-primary"> +Add Material</a>
-        {% endif %}
-    </div>
-</div>
-<div>
-    {% if messages %}
-    <div id="alert-box" style="position: fixed; top: 80px;right: 20px; width: 300px; z-index: 9999;">
-        {% for message in messages %}
-        
-        <div class="alert 
-            {% if message.tags == 'success' %} alert-success
-            {% elif message.tags == 'info' %} alert-primary
-            {% elif message.tags == 'error' %} alert-danger
-            {% else %} alert-secondary {% endif %}
-            d-flex align-items-center justify-content-between shadow mb-2">
-            
-            <!-- Icon + Text -->
-            <div>
-                {% if message.tags == 'success' %}
-                    <i class="bi bi-check-circle-fill me-2"></i>
-                {% elif message.tags == 'info' %}
-                    <i class="bi bi-info-circle-fill me-2"></i>
-                {% elif message.tags == 'error' %}
-                    <i class="bi bi-x-circle-fill me-2"></i>
-                {% endif %}
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
 
-                {{ message }}
-            
-            </div>
-
-        <!-- Close button -->
-        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
-
-        </div>
-        {% endfor %}
-    </div>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="fw-bold text-dark m-0">Inventory & Materials</h3>
+    {% if request.user.userprofile.role != "ELECTRICIAN" %}
+        <a href="{% url 'add_material' %}" class="btn btn-primary shadow-sm"><i class="bi bi-plus-circle me-1"></i> Add Material</a>
     {% endif %}
 </div>
-<br><br>
 
-<div class="table-responsive">
-<table class="table table-striped">
-
-<thead>
-    <tr>
-        <th>Name</th>
-        <th>Total Qty</th>
-        <th>Unit</th>
-        <th>Used Qty</th>
-        <th>Remaining</th>
-        <th>Job</th>
-        <th>Action</th>
-    </tr>
-</thead>
-
-<tbody>
-
-    {% for m in materials %}
-    <tr>
-        <td>{{ m.name }}</td>
-        <td>{{ m.quantity }}</td>
-        <td>{{ m.unit }}</td>
-        <td>{{ m.used_quantity }}</td>
-        <td>{{ m.remaining }}</td>
-        <td>{{ m.job.title }}</td>
-        <td>
-        <a href="{% url 'edit_material' m.id %}" class="btn btn-sm btn-warning">Edit</a>
-        <a href="{% url 'delete_material' m.id %}" class="btn btn-sm btn-danger">Delete</a>
-        </td>
-    </tr>
-
-    {% empty %}
-    <tr>
-        <td colspan="7" class="text-center">No materials found</td>
-    </tr>
-    {% endfor %}
-
-</tbody>
-
-</table>
+<div class="card shadow-sm border-0 rounded-3">
+    <div class="card-body p-0 mt-2">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Material Name</th>
+                        <th>Job Assignment</th>
+                        <th>Total Qty</th>
+                        <th>Used Qty</th>
+                        <th>Remaining</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in materials %}
+                    <tr>
+                        <td class="ps-4 fw-medium text-dark">{{ m.name }}</td>
+                        <td class="text-muted"><i class="bi bi-briefcase me-1"></i> {{ m.job.title }}</td>
+                        <td>{{ m.quantity }} <small class="text-muted">{{ m.unit }}</small></td>
+                        <td>{{ m.used_quantity }} <small class="text-muted">{{ m.unit }}</small></td>
+                        <td>
+                            <span class="badge {% if m.remaining <= 0 %}bg-danger{% elif m.remaining < 5 %}bg-warning{% else %}bg-success{% endif %} bg-opacity-10 text-dark rounded-pill px-3">
+                                {{ m.remaining }} <small>{{ m.unit }}</small>
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'edit_material' m.id %}" class="btn btn-sm btn-light text-primary"><i class="bi bi-pencil-square"></i></a>
+                            <a href="{% url 'delete_material' m.id %}" class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+                            No materials found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-
 {% endblock %}

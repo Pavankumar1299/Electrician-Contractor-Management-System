@@ -1,41 +1,33 @@
 # Python
-
 **pycache**/
 *.pyc
 *.pyo
 *.pyd
 
 # Virtual Environment
-
 venv/
 env/
 
 # Django
-
 *.log
 db.sqlite3
 media/
 staticfiles/
 
 # Environment variables
-
 .env
 
 # VS Code / IDE
-
 .vscode/
 .idea/
 
 # OS files
-
 .DS_Store
 Thumbs.db
 
 # Node (if any frontend tools used)
-
 node_modules/
 
 # migrations (optional)
-
 **/migrations/*.py
 !**/migrations/**init**.py

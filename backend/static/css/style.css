@@ -1,6 +1,6 @@
 body{
-    background:#f5f7fb;
-    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    font-family: Arial, sans-serif, 'Segoe UI', system-ui, -apple-system, sans-serif;
     margin:0;
     overflow-x:hidden;
 }
@@ -23,7 +23,7 @@ body{
 #sidebar-wrapper a{
     color:white;
     text-decoration:none;
-    padding:12px;
+    padding:10px;
     display:block;
 }
 
@@ -35,16 +35,43 @@ body{
 #page-content-wrapper {
     flex:1;
     height:100vh;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease-out;
+
+    min-width: 0;
 }
 
 /* Navbar */
 .navbar {
     position: fixed;
+    height: 70px;
     top: 0;
     right: 0;
     z-index: 1000;
 }
+
+/* .nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+    transition: all 0.2s;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.nav-link i {
+    font-size: 1.2rem;
+    margin-right: 0.75rem;
+    width: 24px;
+    text-align: center;
+}
+
+.nav-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+} */
 
 /* Content area */
 .container-area {
@@ -83,6 +110,7 @@ select:disabled, input:disabled, textarea:disabled {
         top: 30px;
         height: 100%;
         z-index: 1000;
+        margin-top: 37px;
     }
 
     /* Show when toggled */
@@ -130,3 +158,101 @@ select:disabled, input:disabled, textarea:disabled {
     overflow-x: hidden;
 }
 
+/* ===== DASHBOARD ENHANCEMENTS ===== */
+.stat-card {
+    border-radius: 0.5rem;
+}
+.border-left-primary { border-left: 0.25rem solid #4e73df !important; }
+.border-left-success { border-left: 0.25rem solid #1cc88a !important; }
+.border-left-info { border-left: 0.25rem solid #36b9cc !important; }
+.border-left-warning { border-left: 0.25rem solid #f6c23e !important; }
+
+.text-xs {
+    font-size: .75rem;
+}
+
+.icon-circle {
+    height: 3rem;
+    width: 3rem;
+    border-radius: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-primary-light { background-color: rgba(78, 115, 223, 0.1); }
+.bg-success-light { background-color: rgba(28, 200, 138, 0.1); }
+.bg-info-light { background-color: rgba(54, 185, 204, 0.1); }
+.bg-warning-light { background-color: rgba(246, 194, 62, 0.1); }
+
+/* Timeline UI */
+.timeline {
+    position: relative;
+    padding-left: 0;
+    list-style: none;
+}
+.timeline .badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+}
+
+/* Subtle shadows to match modern UI frameworks like AdminLTE/SB Admin */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04) !important;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0,0,0,0.015);
+}
+
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.25rem;
+    transition: all 0.2s;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.nav-link i {
+    font-size: 1.2rem;
+    margin-right: 0.75rem;
+    width: 24px;
+    text-align: center;
+}
+
+.nav-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+}
+
+#sidebar-wrapper {
+    min-height: 10vh;
+    width: 240px;
+    background: #1e293b; /* Deep slate professional dark */
+    transition: margin 0.3s ease-out;
+    box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+    z-index: 1050;
+
+    /* margin-top: 30px; */
+}
+
+.sidebar-heading {
+    padding: 1.2rem 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar-nav {
+    padding: 1rem 0.75rem;
+}

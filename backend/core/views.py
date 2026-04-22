@@ -10,6 +10,8 @@ from functools import wraps
 from django.contrib import messages
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import make_aware
+from django.utils import timezone
+from datetime import timedelta
 
 # -------------------- SECURITY DECORATOR --------------------
 def jwt_cookie_required(view_func):
@@ -175,11 +177,9 @@ def dashboard_view(request):
     completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
 
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    recent_tasks = tasks.order_by('-updated_at')[:5]
 
-    # new line
-    from django.utils import timezone
-    from datetime import timedelta
-
+    
     # DEADLINE ALERTS (only for electrician)
     deadline_notifications = []
 
@@ -220,6 +220,7 @@ def dashboard_view(request):
 
         'role': role,
         'unread_count': unread_count,
+        'recent_tasks': recent_tasks,
     }
 
     return render(request, 'dashboard.html', context)
@@ -342,7 +343,10 @@ def add_job(request):
             description=request.POST['description'],
             location=request.POST['location'],
             deadline=request.POST['deadline'],
-            electrician_id=electrician_id if electrician_id else None
+            electrician_id=electrician_id if electrician_id else None,
+
+            # Just add this line to grab the image file!
+            image=request.FILES.get('image')
         )
 
         messages.success(request, "Job added successfully")
@@ -364,6 +368,12 @@ def edit_job(request, id):
         job.location = request.POST['location']
         job.deadline = request.POST['deadline']
         job.electrician_id = request.POST.get('electrician') or None
+
+        # Grab the new image if one was uploaded
+        new_image = request.FILES.get('image')
+        if new_image:
+            job.image = new_image
+
         job.save()
 
         messages.info(request, "Job updated successfully")
@@ -470,8 +480,15 @@ def edit_task(request, id):
 
         task.status = new_status
 
+        # Grab the file if it was uploaded
+        report = request.FILES.get('report_file')
+        if report:
+            task.report_file = report
+
         # SAVE FIRST
         task.save()
+
+        
 
         # ============ NOTIFICATIONS= ============
 
@@ -624,6 +641,11 @@ def update_profile(request):
         user.username = request.POST.get('username')
         profile.phone = request.POST.get('phone')
         user.email = request.POST.get('email')
+
+        # NEW: Handle profile picture upload
+        profile_pic = request.FILES.get('profile_picture')
+        if profile_pic:
+            profile.profile_picture = profile_pic
 
         user.save()
         profile.save()

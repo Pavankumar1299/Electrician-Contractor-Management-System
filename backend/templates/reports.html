@@ -1,35 +1,83 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Reports</h3>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="fw-bold text-dark m-0">System Reports</h3>
+    <button onclick="window.print()" class="btn btn-outline-secondary shadow-sm"><i class="bi bi-printer me-1"></i> Print Report</button>
+</div>
 
-<h5 class="mt-4">Daily Work Report</h5>
-<ul class="list-group">
-{% for task in tasks_today %}
-<li class="list-group-item">
-    {{ task.title }} - {{ task.status }}
-</li>
-{% empty %}
-<li class="list-group-item">No tasks today</li>
-{% endfor %}
-</ul>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 rounded-3 h-100">
+            <div class="card-header bg-white border-bottom pt-4 pb-3">
+                <h6 class="fw-bold m-0 text-dark"><i class="bi bi-calendar-day text-primary me-2"></i> Daily Work Report</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for task in tasks_today %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-0 border-bottom">
+                        <span class="fw-medium text-dark">{{ task.title }}</span>
+                        <span class="badge {% if task.status == 'Completed' %}bg-success{% elif task.status == 'In Progress' %}bg-warning{% else %}bg-secondary{% endif %} bg-opacity-10 text-dark rounded-pill px-3">
+                            {{ task.status }}
+                        </span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-4 border-0">No tasks logged today</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
 
-<h5 class="mt-4">Task Completion Report</h5>
-<ul class="list-group">
-{% for task in completed_tasks %}
-<li class="list-group-item">
-    {{ task.title }}
-</li>
-{% endfor %}
-</ul>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 rounded-3 h-100">
+            <div class="card-header bg-white border-bottom pt-4 pb-3">
+                <h6 class="fw-bold m-0 text-dark"><i class="bi bi-check2-circle text-success me-2"></i> Recently Completed</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for task in completed_tasks|slice:":5" %}
+                    <li class="list-group-item py-3 px-4 border-0 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-3"></i>
+                            <div>
+                                <h6 class="mb-0 fw-medium text-dark">{{ task.title }}</h6>
+                                <small class="text-muted">{{ task.updated_at|date:"M d, Y" }}</small>
+                            </div>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-4 border-0">No completed tasks yet</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
 
-<h5 class="mt-4">Electrician Activity</h5>
-<ul class="list-group">
-{% for a in activity %}
-<li class="list-group-item">
-    {{ a.electrician__name }} - {{ a.count }} tasks
-</li>
-{% endfor %}
-</ul>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 rounded-3 h-100">
+            <div class="card-header bg-white border-bottom pt-4 pb-3">
+                <h6 class="fw-bold m-0 text-dark"><i class="bi bi-lightning-charge text-warning me-2"></i> Electrician Activity</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for a in activity %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-0 border-bottom">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 32px; height: 32px; font-size: 14px;">
+                                {{ a.electrician__name|make_list|first|upper }}
+                            </div>
+                            <span class="fw-medium text-dark">{{ a.electrician__name }}</span>
+                        </div>
+                        <span class="badge bg-light text-dark border px-3 rounded-pill">{{ a.count }} Tasks</span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-4 border-0">No active assignments</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

@@ -1,59 +1,61 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<h3>Notifications</h3>
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
 
-<div class="table-responsive">
-<table class="table table-striped">
-
-<thead>
-<tr>
-<th>Message</th>
-<th>Time</th>
-<th>Status</th>
-<th>Action</th>
-</tr>
-</thead>
-
-<tbody>
-
-{% for n in notifications %}
-<tr>
-
-<td>{{ n.message }}</td>
-
-<td>{{ n.created_at|timesince }} ago</td>
-
-<td>
-{% if not n.is_read %}
-<span class="badge bg-danger">Unread</span>
-{% else %}
-<span class="badge bg-success">Read</span>
-{% endif %}
-</td>
-
-<td>
-{% if not n.is_read %}
-<a href="{% url 'mark_notification_read' n.id %}" class="btn btn-sm btn-primary">
-Mark Read
-</a>
-{% else %}
-<a href="{% url 'delete_notification' n.id %}" 
-           class="btn btn-sm btn-danger">✖</a>
-{% endif %}
-</td>
-
-</tr>
-
-{% empty %}
-<tr>
-<td colspan="4" class="text-center">No notifications</td>
-</tr>
-{% endfor %}
-
-</tbody>
-
-</table>
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="fw-bold text-dark m-0">Notifications</h3>
 </div>
 
+<div class="card shadow-sm border-0 rounded-3">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Message</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for n in notifications %}
+                    <tr class="{% if not n.is_read %}bg-light{% endif %}">
+                        <td class="ps-4 {% if not n.is_read %}fw-bold text-dark{% else %}text-muted{% endif %}">
+                            <i class="bi bi-bell{% if not n.is_read %}-fill text-primary{% endif %} me-2"></i> {{ n.message }}
+                        </td>
+                        <td class="text-muted small">{{ n.created_at|timesince }} ago</td>
+                        <td>
+                            {% if not n.is_read %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3">New</span>
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3">Read</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            {% if not n.is_read %}
+                                <a href="{% url 'mark_notification_read' n.id %}" class="btn btn-sm btn-outline-primary rounded-pill">Mark Read</a>
+                            {% else %}
+                                <a href="{% url 'delete_notification' n.id %}" class="btn btn-sm btn-light text-danger"><i class="bi bi-x-lg"></i></a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-5">
+                            <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+                            All caught up! No notifications.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}

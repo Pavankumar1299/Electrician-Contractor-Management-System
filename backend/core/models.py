@@ -17,6 +17,9 @@ class UserProfile(models.Model):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     phone = models.CharField(max_length=15, null=True, blank=True)
 
+    # NEW: Add the profile picture field
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+
     def __str__(self):
         return f"{self.user.username} - {self.role}"
     
@@ -62,6 +65,9 @@ class Job(models.Model):
         related_name="jobs"
     )
 
+    # NEW: File Upload Feature for Job Images
+    image = models.ImageField(upload_to='job_images/', null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -77,31 +83,16 @@ class Task(models.Model):
 
     title = models.CharField(max_length=200)
     description = models.TextField()
+    job = models.ForeignKey( Job, on_delete=models.CASCADE, related_name="tasks")
+    electrician = models.ForeignKey( Electrician, on_delete=models.SET_NULL, null=True, related_name="tasks" )
+    status = models.CharField( max_length=20, choices=STATUS_CHOICES, default='Pending' )
 
-    job = models.ForeignKey(
-        Job,
-        on_delete=models.CASCADE,
-        related_name="tasks"
-    )
-
-    electrician = models.ForeignKey(
-        Electrician,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="tasks"
-    )
-
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='Pending'
-    )
+    # NEW: File Upload Feature for Task Reports
+    report_file = models.FileField(upload_to='task_reports/', null=True, blank=True)
 
     # new field to track if notification has been sent for completion
     deadline = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     
