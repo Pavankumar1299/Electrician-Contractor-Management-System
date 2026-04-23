@@ -14,6 +14,7 @@ from django.utils import timezone
 from datetime import timedelta
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import F
+import random
 
 
 
@@ -253,6 +254,82 @@ def delete_notification(request, id):
     notification = get_object_or_404(Notification, id=id, user=request.user)
     notification.delete()
     return redirect('notifications')
+
+
+# -------------------- CONTRACTORS --------------------
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def contractors_view(request):
+    # Fetch all Users who have a UserProfile with the role 'CONTRACTOR'
+    query = request.GET.get('name')
+    contractors = User.objects.filter(userprofile__role='CONTRACTOR')
+    
+    if query:
+        contractors = contractors.filter(first_name__icontains=query)
+
+    return render(request, 'contractors.html', {'contractors': contractors})
+
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def add_contractor(request):
+    if request.method == 'POST':
+        name = request.POST['name']
+        email = request.POST['email']
+        phone = request.POST['phone']
+
+        # 1. Create a safe, unique username for the built-in User model
+        safe_username = f"{name.replace(' ', '').lower()}_{random.randint(1000, 9999)}"
+        
+        # 2. Create the User (Password is defaulted since they are added by Admin)
+        user = User.objects.create_user(username=safe_username, email=email, password='defaultpassword123')
+        user.first_name = name
+        user.save()
+
+        # 3. Update the automatically created UserProfile
+        profile = user.userprofile
+        profile.role = 'CONTRACTOR'
+        profile.phone = phone
+        profile.save()
+
+        messages.success(request, "Contractor added successfully")
+        return redirect('contractors')
+
+    return render(request, 'add_contractor.html')
+
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def edit_contractor(request, id):
+    contractor_user = get_object_or_404(User, id=id, userprofile__role='CONTRACTOR')
+
+    if request.method == 'POST':
+        # Update User model fields
+        contractor_user.first_name = request.POST['name']
+        contractor_user.email = request.POST['email']
+        contractor_user.save()
+
+        # Update UserProfile model fields
+        profile = contractor_user.userprofile
+        profile.phone = request.POST['phone']
+        profile.save()
+
+        messages.info(request, "Contractor updated successfully")
+        return redirect('contractors')
+
+    return render(request, 'edit_contractor.html', {'contractor': contractor_user})
+
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def delete_contractor(request, id):
+    contractor_user = get_object_or_404(User, id=id, userprofile__role='CONTRACTOR')
+
+    if request.method == 'POST':
+        # Deleting the User automatically deletes the UserProfile due to on_delete=models.CASCADE
+        contractor_user.delete()
+        
+        messages.error(request, "Contractor deleted successfully")
+        return redirect('contractors')
+
+    return render(request, 'delete_contractor.html', {'contractor': contractor_user})
 
 
 # -------------------- ELECTRICIANS --------------------
@@ -728,8 +805,6 @@ def reports_page(request):
 
 
 # ----------- ADMIN - VIEW AS (IMPERSONATION) ------------
-# Add this at the top of views.py if not already there
-
 @jwt_cookie_required
 @role_required(['ADMIN'])
 def view_as_user(request, id):
@@ -758,25 +833,54 @@ def view_as_user(request, id):
     )
     return response
 
+# -------------------- VIEW AS CONTRACTOR --------------------
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def view_as_contractor(request, id):
+    contractor = get_object_or_404(User, id=id, userprofile__role='CONTRACTOR')
+
+    # Save the original Admin's ID and remember we came from the Contractors page
+    request.session['original_admin_id'] = request.user.id
+    request.session['impersonation_return_url'] = 'contractors'
+
+    # Generate a new token for the contractor
+    refresh = RefreshToken.for_user(contractor)
+
+    display_name = contractor.first_name if contractor.first_name else contractor.username
+    messages.success(request, f"You are now viewing the system as {display_name}")
+    
+    response = redirect('dashboard')
+    response.set_cookie(
+        key='access_token',
+        value=str(refresh.access_token),
+        httponly=True,
+        samesite='Lax'
+    )
+    return response
+
+# -------------------- STOP VIEWING AS --------------------
 @jwt_cookie_required
 def stop_viewing_as(request):
-    # Check if they are actually impersonating someone
     if 'original_admin_id' not in request.session:
         return redirect('dashboard')
 
-    # Get the original admin user
     original_admin_id = request.session['original_admin_id']
     admin_user = get_object_or_404(User, id=original_admin_id)
 
-    # Clear the session variable so the banner disappears
+    # Determine which page to return the Admin to (default to dashboard if unknown)
+    return_url = request.session.get('impersonation_return_url', 'dashboard')
+
+    # Clear the session variables
     del request.session['original_admin_id']
+    if 'impersonation_return_url' in request.session:
+        del request.session['impersonation_return_url']
 
     # Generate a fresh token for the Admin
     refresh = RefreshToken.for_user(admin_user)
 
     messages.info(request, "Welcome back. Restored Admin session.")
     
-    response = redirect('electricians')
+    response = redirect(return_url)
     response.set_cookie(
         key='access_token',
         value=str(refresh.access_token),

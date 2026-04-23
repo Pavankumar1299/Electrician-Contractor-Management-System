@@ -12,7 +12,14 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
 
+# Dashboard
     path('dashboard/', views.dashboard_view, name='dashboard'),
+
+# Contractors
+    path('contractors/', views.contractors_view, name='contractors'),
+    path('contractors/add/', views.add_contractor, name='add_contractor'),
+    path('contractors/edit/<int:id>/', views.edit_contractor, name='edit_contractor'),
+    path('contractors/delete/<int:id>/', views.delete_contractor, name='delete_contractor'),
 
 # Electricians
     path('electricians/', views.electricians_view, name='electricians'),
@@ -51,6 +58,7 @@ urlpatterns = [
     path('notification/delete/<int:id>/', views.delete_notification, name='delete_notification'),
 
 # Admin - View As
+    path('contractors/view-as/<int:id>/', views.view_as_contractor, name='view_as_contractor'),
     path('electricians/view-as/<int:id>/', views.view_as_user, name='view_as_user'),
     path('stop-viewing-as/', views.stop_viewing_as, name='stop_viewing_as'),
 ]

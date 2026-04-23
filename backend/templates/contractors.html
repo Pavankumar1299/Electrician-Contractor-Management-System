@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h3 class="fw-bold text-dark m-0">Contractor Management</h3>
+    <a href="{% url 'add_contractor' %}" class="btn btn-primary shadow-sm"><i class="bi bi-building-add me-1"></i> Add Contractor</a>
+</div>
+
+<div class="card shadow-sm border-0 rounded-3">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+        <form method="GET" action="{% url 'contractors' %}" class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" name="name" value="{{ request.GET.name }}" placeholder="Search contractors..." class="form-control bg-light border-0" onchange="this.form.submit()">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <a href="{% url 'contractors' %}" class="btn btn-light w-100 text-muted">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card-body p-0 mt-3">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Company / Name</th>
+                        <th>Contact Email</th>
+                        <th>Phone Number</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contractor in contractors %}
+                    <tr>
+                        <td class="ps-4 fw-medium text-dark">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-dark text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 35px; height: 35px;">
+                                    {{ contractor.first_name|make_list|first|upper|default:"C" }}
+                                </div>
+                                {{ contractor.first_name|default:contractor.username }}
+                            </div>
+                        </td>
+                        <td class="text-muted">{{ contractor.email }}</td>
+                        <td>{{ contractor.userprofile.phone|default:"Not Provided" }}</td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'view_as_contractor' contractor.id %}" class="btn btn-sm btn-light text-success" data-bs-toggle="tooltip" title="View As this Contractor"><i class="bi bi-box-arrow-in-right"></i></a>
+                            <a href="{% url 'edit_contractor' contractor.id %}" class="btn btn-sm btn-light text-primary"><i class="bi bi-pencil-square"></i></a>
+                            <a href="{% url 'delete_contractor' contractor.id %}" class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-5">
+                            <i class="bi bi-building fs-1 d-block mb-2"></i>
+                            No contractors found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

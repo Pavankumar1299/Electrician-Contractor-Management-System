@@ -54,6 +54,9 @@
             <small class="text-uppercase fw-bold mb-2 ms-3" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(164, 202, 241, 0.882); margin-top: 10px;">Management ↓</small>
 
             {% if role|upper == "ADMIN" %}
+            <a href="{% url 'contractors' %}" class="nav-link text-decoration-none">
+                <i class="bi bi-building"></i> Contractors
+            </a>
             <a href="{% url 'electricians' %}" class="nav-link text-decoration-none">
                 <i class="bi bi-people"></i> Electricians
             </a>
@@ -93,9 +96,9 @@
 
     <!-- Page Content -->
     <div id="page-content-wrapper" class="w-100 flex-grow-1 d-flex flex-column">
-            <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4 py-3">
             <div class="d-flex align-items-center justify-content-between w-100">
-                
+
                 <div class="d-flex align-items-center">
                     <button class="btn btn-light border-0 d-md-none me-3" id="menu-toggle">
                         <i class="bi bi-list fs-4"></i>
@@ -103,21 +106,39 @@
                     <span class="fw-bold text-dark fs-5 d-none d-md-block">Workspace</span>
                 </div>
 
-                <div class="d-flex align-items-center gap-3">
-                    <div class="text-end d-none d-sm-block">
-                        <div class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">{{ request.user.username }}</div>
-                        <div class="text-muted small" style="font-size: 0.75rem;">{{ request.user.userprofile.role }}</div>
-                    </div>
-                    
-                    {% if request.user.userprofile.profile_picture %}
-                        <img src="{{ request.user.userprofile.profile_picture.url }}" class="rounded-circle shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
-                    {% else %}
-                        <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 40px; height: 40px;">
-                            {{ request.user.username|make_list|first|upper }}
+                <div class="dropdown">
+                    <div class="d-flex align-items-center gap-3" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                        
+                        <div class="text-end d-none d-sm-block">
+                            <div class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">{{ request.user.username }}</div>
+                            <div class="text-muted small" style="font-size: 0.75rem;">{{ request.user.userprofile.role }}</div>
                         </div>
-                    {% endif %}
-                </div>
+                        
+                        {% if request.user.userprofile.profile_picture %}
+                            <img src="{{ request.user.userprofile.profile_picture.url }}" class="rounded-circle shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm" style="width: 40px; height: 40px;">
+                                {{ request.user.username|make_list|first|upper }}
+                            </div>
+                        {% endif %}
+                        
+                    </div>
 
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3 rounded-3">
+                        <li>
+                            <a class="dropdown-item py-2 d-flex align-items-center" href="{% url 'profile' %}">
+                                <i class="bi bi-person-circle text-muted me-2 fs-5"></i> Profile Settings
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider opacity-25"></li>
+                        <li>
+                            <a class="dropdown-item py-2 text-danger d-flex align-items-center" href="{% url 'logout' %}">
+                                <i class="bi bi-box-arrow-right me-2 fs-5"></i> Sign Out
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
             </div>
         </nav>
 
@@ -131,13 +152,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Sidebar Toggle Script
+    // 1. Sidebar Toggle Script
     document.getElementById("menu-toggle").addEventListener("click", function(e) {
         e.preventDefault();
         document.getElementById("wrapper").classList.toggle("toggled");
     });
 
-    // Close sidebar on mobile when clicking a link
+    // 2. Close sidebar on mobile when clicking a link
     if (window.innerWidth <= 768) {
         const links = document.querySelectorAll('.nav-link');
         links.forEach(link => {
@@ -146,6 +167,23 @@
             });
         });
     }
+
+    // 3. Close sidebar on mobile when clicking OUTSIDE of it
+    document.addEventListener("click", function(event) {
+        // Check window size dynamically inside the click event
+        if (window.innerWidth <= 768) {
+            let wrapper = document.getElementById("wrapper");
+            let sidebar = document.getElementById("sidebar-wrapper"); 
+            let menuToggle = document.getElementById("menu-toggle");
+
+            // If clicked outside sidebar AND outside menu button, close it
+            if (wrapper && sidebar && menuToggle) {
+                if (!sidebar.contains(event.target) && !menuToggle.contains(event.target) && wrapper.classList.contains("toggled")) {
+                    wrapper.classList.remove("toggled");
+                }
+            }
+        }
+    });
 </script>
 </body>
 </html>
