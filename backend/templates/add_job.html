@@ -40,7 +40,7 @@
 
                         <div class="col-md-6 mb-4">
                             <label class="form-label fw-semibold text-dark">Deadline <span class="text-danger">*</span></label>
-                            <input type="date" name="deadline" class="form-control bg-light border-0" required>
+                            <input type="date" name="deadline" class="form-control bg-light border-0" min="{% now 'Y-m-d' %}" required>
                         </div>
                     </div>
 
