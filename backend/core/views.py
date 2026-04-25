@@ -573,43 +573,60 @@ def edit_task(request, id):
 
         # ============ NOTIFICATIONS= ============
 
-        # 1. TASK COMPLETED → ADMIN
+        # 1. TASK COMPLETED → ADMIN & JOB COMPLETION CHECK
         if new_status == "Completed" and old_status != "Completed":
             admin_users = User.objects.filter(userprofile__role='ADMIN')
 
+            # Notify Admin that the specific task is done
             for admin in admin_users:
                 Notification.objects.create(
                     user=admin,
                     message=f"Task completed: {task.title} by {task.electrician.name}"
                 )
-            print("Admin notified")
-            print("OLD:", old_status)
-            print("NEW:", request.POST.get('status'))
 
-        # 2. TASK UPDATED → ELECTRICIAN
+            # --- NEW: CHECK IF THE ENTIRE JOB IS NOW COMPLETE ---
+            parent_job = task.job
+            incomplete_tasks_exist = Task.objects.filter(job=parent_job).exclude(status='Completed').exists()
+            
+            if not incomplete_tasks_exist:
+                # Notify Admins that the whole job is done
+                for admin in admin_users:
+                    Notification.objects.create(
+                        user=admin,
+                        message=f"🎉 JOB COMPLETE: All tasks for '{parent_job.title}' are finished!"
+                    )
+                
+                # Notify the Lead Contractor (if they aren't also an admin)
+                if parent_job.electrician and parent_job.electrician.user:
+                    if parent_job.electrician.user not in admin_users:
+                        Notification.objects.create(
+                            user=parent_job.electrician.user,
+                            message=f"🎉 JOB COMPLETE: Your site phase '{parent_job.title}' is fully finished!"
+                        )
+
+        # 2. TASK UPDATED/ASSIGNED → ELECTRICIAN
         # CASE 1: First time assignment (no old electrician)
         if old_electrician is None and task.electrician:
             Notification.objects.create(
                 user=task.electrician.user,
                 message=f"New task assigned: {task.title}"
             )
-            # print("First assignment")
 
-        # CASE 2: Electrician changed
+        # CASE 2: Electrician changed / Reassigned
         elif old_electrician != task.electrician_id and task.electrician:
             Notification.objects.create(
                 user=task.electrician.user,
-                message=f"New task assigned: {task.title}"
+                message=f"New task assigned to you: {task.title}"
             )
-            # print("Reassigned")
 
-        # CASE 3: Only update (same electrician)
+        # CASE 3: Only update (same electrician, e.g., deadline or description changed)
         elif task.electrician and task.electrician.user:
-            Notification.objects.create(
-                user=task.electrician.user,
-                message=f"Task updated: {task.title}"
-            )
-            # print("Updated only")
+            # We don't want to spam them if they just clicked "Completed" themselves
+            if new_status != "Completed" or old_status == new_status:
+                Notification.objects.create(
+                    user=task.electrician.user,
+                    message=f"Task updated: {task.title}"
+                )
 
         messages.info(request, "Task updated successfully")
         return redirect('tasks')
