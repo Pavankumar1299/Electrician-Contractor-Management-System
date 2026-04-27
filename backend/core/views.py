@@ -484,16 +484,35 @@ def delete_job(request, id):
 def tasks_page(request):
     role = request.user.userprofile.role
     status = request.GET.get('status')
+    job_filter = request.GET.get('job', '')
 
+    # 1. DEFINE BASE QUERYSET (Based on Role Security)
     if role == 'ELECTRICIAN':
-        tasks = Task.objects.filter(electrician__user=request.user)
-    else:
-        tasks = Task.objects.all()
+        # Electricians only see their own tasks
+        tasks = Task.objects.filter(electrician__user=request.user).select_related('job')
 
+        # Pro-Tip: Also limit the dropdown to only show jobs they are assigned to!
+        # jobs = Job.objects.filter(electrician__user=request.user) 
+        
+        # Fetch all unique jobs that are linked to the user's assigned tasks!
+        jobs = Job.objects.filter(tasks__electrician__user=request.user).distinct()
+    else:
+        # Admins and Contractors see everything
+        tasks = Task.objects.select_related('job').all()
+        jobs = Job.objects.all()
+
+    # 2. APPLY JOB FILTER
+    if job_filter:
+        tasks = tasks.filter(job_id=job_filter)
+
+    # 3. APPLY STATUS FILTER
     if status:
         tasks = tasks.filter(status=status)
 
-    return render(request, 'tasks.html', {'tasks': tasks})
+    return render(request, 'tasks.html', {
+        'tasks': tasks,
+        'jobs': jobs,
+    })
 
 @jwt_cookie_required
 @role_required(['ADMIN', 'CONTRACTOR'])
