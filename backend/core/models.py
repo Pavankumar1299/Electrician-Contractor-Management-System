@@ -4,6 +4,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db import models
+from django.conf import settings
+# from .models import Task
 
 # --------------------- USER PROFILES --------------------
 class UserProfile(models.Model):
@@ -46,6 +49,12 @@ class Electrician(models.Model):
     phone = models.CharField(max_length=15)
     email = models.EmailField()
     experience = models.IntegerField()
+
+    # --- NEW: FINANCIAL DETAILS ---
+    upi_id = models.CharField(max_length=50, null=True, blank=True)
+    bank_account = models.CharField(max_length=20, null=True, blank=True)
+    ifsc_code = models.CharField(max_length=15, null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -128,3 +137,26 @@ class Material(models.Model):
     @property
     def remaining(self):
         return self.quantity - self.used_quantity
+    
+
+class TaskPayment(models.Model):
+    STATUS_CHOICES = (
+        ('PENDING', 'Pending Verification'),
+        ('PAID', 'Paid'),
+    )
+
+    task = models.OneToOneField(Task, on_delete=models.CASCADE, related_name='payment_record')
+    electrician = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='earnings')
+    
+    # Amount is blank initially until the Admin verifies and inputs the final wage
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
+    
+    # Audit trail
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Payment for Task {self.task.id} - {self.status}"
+    
+

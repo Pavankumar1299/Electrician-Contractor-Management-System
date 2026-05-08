@@ -58,6 +58,28 @@
                         <small class="text-muted"><i class="bi bi-info-circle"></i> Contact an administrator to change your role.</small>
                     </div>
 
+                    {% if profile.role|upper == 'ELECTRICIAN' %}
+                    <div class="mt-4 pt-3 border-top">
+                        <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-wallet2 me-2"></i>Financial Settings</h5>
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-muted fw-semibold">UPI ID (PhonePe/GPay)</label>
+                            <input type="text" class="form-control" name="upi_id" value="{{ electrician.upi_id|default:'' }}" placeholder="e.g., 9876543210@ybl" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted fw-semibold">Bank Account Number</label>
+                                <input type="text" class="form-control" name="bank_account" value="{{ electrician.bank_account|default:'' }}" placeholder="e.g., 501002030405" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label text-muted fw-semibold">IFSC Code</label>
+                                <input type="text" class="form-control" name="ifsc_code" value="{{ electrician.ifsc_code|default:'' }}" placeholder="e.g., HDFC0001234" required>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{% url 'profile' %}" class="btn btn-light px-4">Cancel</a>
                         <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="bi bi-save me-1"></i> Save Changes</button>

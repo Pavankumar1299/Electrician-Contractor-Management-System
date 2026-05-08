@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404, redirect, render
-from .models import Electrician, Job, Task, Material, UserProfile, Notification
+from .models import Electrician, Job, Task, Material, UserProfile, Notification, TaskPayment
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,6 +15,7 @@ from datetime import timedelta
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import F
 import random
+
 
 
 
@@ -184,6 +185,8 @@ def dashboard_view(request):
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     recent_tasks = tasks.order_by('-updated_at')[:5]
 
+    my_payments = TaskPayment.objects.filter(electrician=request.user).select_related('task')
+    total_earned = sum(p.amount for p in my_payments if p.status == 'PAID' and p.amount)
     
     # DEADLINE ALERTS (only for electrician)
     deadline_notifications = []
@@ -226,6 +229,8 @@ def dashboard_view(request):
         'role': role,
         'unread_count': unread_count,
         'recent_tasks': recent_tasks,
+
+        'total_earned': total_earned
     }
 
     return render(request, 'dashboard.html', context)
@@ -590,10 +595,19 @@ def edit_task(request, id):
 
         
 
-        # ============ NOTIFICATIONS= ============
+        # ============ NOTIFICATIONS & PAYMENTS ============
 
-        # 1. TASK COMPLETED → ADMIN & JOB COMPLETION CHECK
+        # 1. TASK COMPLETED → PAYMENT GENERATION & ADMIN CHECK
         if new_status == "Completed" and old_status != "Completed":
+            
+            # --- START OF BRAND NEW TRIGGER CODE ---
+            if task.electrician and task.electrician.user:
+                TaskPayment.objects.get_or_create(
+                    task=task,
+                    electrician=task.electrician.user 
+                )
+            # --- END OF BRAND NEW TRIGGER CODE ---
+
             admin_users = User.objects.filter(userprofile__role='ADMIN')
 
             # Notify Admin that the specific task is done
@@ -624,22 +638,27 @@ def edit_task(request, id):
                         )
 
         # 2. TASK UPDATED/ASSIGNED → ELECTRICIAN
+        
+        # Fix: Convert both IDs to strings so '5' == '5' evaluates properly
+        old_elec_str = str(old_electrician) if old_electrician else None
+        new_elec_str = str(task.electrician_id) if task.electrician_id else None
+
         # CASE 1: First time assignment (no old electrician)
-        if old_electrician is None and task.electrician:
+        if not old_elec_str and new_elec_str and task.electrician:
             Notification.objects.create(
                 user=task.electrician.user,
                 message=f"New task assigned: {task.title}"
             )
 
         # CASE 2: Electrician changed / Reassigned
-        elif old_electrician != task.electrician_id and task.electrician:
+        elif old_elec_str and new_elec_str and old_elec_str != new_elec_str and task.electrician:
             Notification.objects.create(
                 user=task.electrician.user,
                 message=f"New task assigned to you: {task.title}"
             )
 
         # CASE 3: Only update (same electrician, e.g., deadline or description changed)
-        elif task.electrician and task.electrician.user:
+        elif old_elec_str == new_elec_str and task.electrician and task.electrician.user:
             # We don't want to spam them if they just clicked "Completed" themselves
             if new_status != "Completed" or old_status == new_status:
                 Notification.objects.create(
@@ -774,9 +793,15 @@ def profile_page(request):
     user = request.user
     profile = user.userprofile
 
+    # NEW: Fetch Electrician data if they are an electrician
+    electrician = None
+    if profile.role == 'ELECTRICIAN':
+        electrician = Electrician.objects.filter(user=user).first()
+
     return render(request, 'profile.html', {
         'user': user,
-        'role': profile.role
+        'role': profile.role,
+        'electrician': electrician # Pass to template
     })
 
 @jwt_cookie_required
@@ -798,13 +823,27 @@ def update_profile(request):
         user.save()
         profile.save()
 
+        # --- NEW: SAVE FINANCIAL DETAILS ---
+        if profile.role == 'ELECTRICIAN':
+            electrician = Electrician.objects.filter(user=user).first()
+            if electrician:
+                electrician.upi_id = request.POST.get('upi_id')
+                electrician.bank_account = request.POST.get('bank_account')
+                electrician.ifsc_code = request.POST.get('ifsc_code')
+                electrician.save()
+
         messages.success(request, "Profile updated successfully")
         return redirect('profile')
 
+    # Fetch to pre-fill the form
+    electrician = None
+    if profile.role == 'ELECTRICIAN':
+        electrician = Electrician.objects.filter(user=user).first()
 
     return render(request, 'update_profile.html', {
         'user': user,
-        'profile': profile
+        'profile': profile,
+        'electrician': electrician # Pass to template
     })
 
 
@@ -925,4 +964,43 @@ def stop_viewing_as(request):
     )
     return response
 
+@jwt_cookie_required
+@role_required(['ADMIN'])
+def admin_settlement_dashboard(request):
+    # Fetch all payments that are still Pending
+    pending_payments = TaskPayment.objects.filter(status='PENDING').select_related('task', 'electrician')
+    paid_payments = TaskPayment.objects.filter(status='PAID').order_by('-paid_at')
+    
+    context = {
+        'pending_payments': pending_payments,
+        'paid_payments': paid_payments
+    }
+    return render(request, 'admin_settlements.html', context)
+
+def process_payment(request, payment_id):
+    if request.method == "POST":
+        payment = TaskPayment.objects.get(id=payment_id)
+        settled_amount = request.POST.get('amount')
+        
+        payment.amount = settled_amount
+        payment.status = 'PAID'
+        payment.paid_at = timezone.now()
+        payment.save()
+        
+        return redirect('admin_settlement_dashboard')
+
+@jwt_cookie_required    
+@login_required(login_url='login')
+def electrician_earnings(request):
+    # Filter payments strictly by the logged-in electrician
+    my_payments = TaskPayment.objects.filter(electrician=request.user).select_related('task')
+    
+    # Calculate totals for their dashboard
+    total_earned = sum(p.amount for p in my_payments if p.status == 'PAID' and p.amount)
+    
+    context = {
+        'my_payments': my_payments,
+        'total_earned': total_earned
+    }
+    return render(request, 'electrician_earnings.html', context)
 

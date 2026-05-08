@@ -61,6 +61,12 @@ urlpatterns = [
     path('contractors/view-as/<int:id>/', views.view_as_contractor, name='view_as_contractor'),
     path('electricians/view-as/<int:id>/', views.view_as_user, name='view_as_user'),
     path('stop-viewing-as/', views.stop_viewing_as, name='stop_viewing_as'),
+
+# The new Financial URLs
+    path('settlements/', views.admin_settlement_dashboard, name='admin_settlement_dashboard'),
+    path('settlements/process/<int:payment_id>/', views.process_payment, name='process_payment'),
+    
+    path('electrician/earnings/', views.electrician_earnings, name='electrician_earnings'),
 ]
 
 if settings.DEBUG:
