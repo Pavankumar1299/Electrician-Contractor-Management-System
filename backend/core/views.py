@@ -691,25 +691,72 @@ def delete_task(request, id):
 
 
 # -------------------- MATERIALS --------------------
+# @jwt_cookie_required
+# def materials_page(request):
+#     materials = Material.objects.select_related('job').all()
+#     jobs = Job.objects.all() # Fetch jobs for the dropdown filter
+
+#     # 1. Get filter parameters from the URL
+#     search_query = request.GET.get('q', '')
+#     job_filter = request.GET.get('job', '')
+#     stock_filter = request.GET.get('stock', '')
+
+#     # 2. Apply Text Search
+#     if search_query:
+#         materials = materials.filter(name__icontains=search_query)
+
+#     # 3. Apply Job Filter
+#     if job_filter:
+#         materials = materials.filter(job_id=job_filter)
+
+#     # 4. Apply Stock Status Filter
+#     if stock_filter == 'out_of_stock':
+#         # Remaining is 0 or less
+#         materials = materials.filter(quantity__lte=F('used_quantity'))
+#     elif stock_filter == 'low_stock':
+#         # Remaining is greater than 0 but less than or equal to 10
+#         materials = materials.annotate(
+#             remaining_stock=F('quantity') - F('used_quantity')
+#         ).filter(remaining_stock__gt=0, remaining_stock__lte=10)
+#     elif stock_filter == 'in_stock':
+#         # Remaining is strictly greater than 0
+#         materials = materials.filter(quantity__gt=F('used_quantity'))
+
+#     return render(request, 'materials.html', {
+#         'materials': materials,
+#         'jobs': jobs, # Pass jobs to the template for the dropdown
+#     })
+
+
 @jwt_cookie_required
 def materials_page(request):
-    materials = Material.objects.select_related('job').all()
-    jobs = Job.objects.all() # Fetch jobs for the dropdown filter
+    role = request.user.userprofile.role
 
-    # 1. Get filter parameters from the URL
+    # 1. ROLE-BASED DATA FETCHING
+    if role == 'ELECTRICIAN':
+        # Find the jobs this electrician has tasks for
+        jobs = Job.objects.filter(tasks__electrician__user=request.user).distinct()
+        # Only show materials linked to those specific jobs
+        materials = Material.objects.filter(job__in=jobs).select_related('job')
+    else:
+        # Admins and Contractors see everything
+        jobs = Job.objects.all()
+        materials = Material.objects.select_related('job').all()
+
+    # 2. Get filter parameters from the URL
     search_query = request.GET.get('q', '')
     job_filter = request.GET.get('job', '')
     stock_filter = request.GET.get('stock', '')
 
-    # 2. Apply Text Search
+    # 3. Apply Text Search
     if search_query:
         materials = materials.filter(name__icontains=search_query)
 
-    # 3. Apply Job Filter
+    # 4. Apply Job Filter
     if job_filter:
         materials = materials.filter(job_id=job_filter)
 
-    # 4. Apply Stock Status Filter
+    # 5. Apply Stock Status Filter
     if stock_filter == 'out_of_stock':
         # Remaining is 0 or less
         materials = materials.filter(quantity__lte=F('used_quantity'))
@@ -724,7 +771,7 @@ def materials_page(request):
 
     return render(request, 'materials.html', {
         'materials': materials,
-        'jobs': jobs, # Pass jobs to the template for the dropdown
+        'jobs': jobs, # Pass the filtered jobs to the template for the dropdown
     })
 
 @jwt_cookie_required
@@ -748,7 +795,7 @@ def add_material(request):
     return render(request, 'add_material.html', {'jobs': jobs})
 
 @jwt_cookie_required
-@role_required(['ADMIN', 'CONTRACTOR'])
+@role_required(['ADMIN', 'CONTRACTOR', 'ELECTRICIAN'])
 def edit_material(request, id):
     material = get_object_or_404(Material, id=id)
     jobs = Job.objects.all()

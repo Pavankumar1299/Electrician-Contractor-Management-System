@@ -102,11 +102,11 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
+                            <a href="{% url 'edit_material' m.id %}" class="btn btn-sm btn-light text-primary"><i class="bi bi-pencil-square"></i></a>
                             {% if request.user.userprofile.role != "ELECTRICIAN" %}
-                                <a href="{% url 'edit_material' m.id %}" class="btn btn-sm btn-light text-primary"><i class="bi bi-pencil-square"></i></a>
                                 <a href="{% url 'delete_material' m.id %}" class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></a>
                             {% else %}
-                                <span class="text-muted small">Read Only</span>
+                                <!-- <span class="text-muted small">Read Only</span> -->
                             {% endif %}
                         </td>
                     </tr>

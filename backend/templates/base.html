@@ -252,10 +252,11 @@
             <a href="{% url 'jobs' %}" class="sidebar-link text-decoration-none {% if 'jobs' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-briefcase me-2"></i> Jobs
             </a>
+            {% endif %}
             <a href="{% url 'materials' %}" class="sidebar-link text-decoration-none {% if 'materials' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-box-seam me-2"></i> Inventory
             </a>
-            {% endif %}
+            
 
             <a href="{% url 'tasks' %}" class="sidebar-link text-decoration-none {% if 'tasks' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-list-check me-2"></i> Tasks
