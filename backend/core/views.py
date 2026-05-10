@@ -519,6 +519,45 @@ def tasks_page(request):
         'jobs': jobs,
     })
 
+# @jwt_cookie_required
+# @role_required(['ADMIN', 'CONTRACTOR'])
+# def add_task(request):
+#     jobs = Job.objects.all()
+#     electricians = Electrician.objects.all()
+
+#     if request.method == 'POST':
+
+#         deadline = request.POST.get('deadline')
+
+#         if deadline:
+#             dt = parse_datetime(deadline)
+#             deadline = make_aware(dt)
+
+#         task = Task.objects.create(
+#             title=request.POST['title'],
+#             description=request.POST['description'],
+#             job_id=request.POST['job'],
+#             electrician_id=request.POST.get('electrician') or None,
+#             status=request.POST['status'],
+#             deadline=deadline 
+#         )
+
+#         if task.electrician and task.electrician.user:
+#             Notification.objects.create(
+#                 user=task.electrician.user,
+#                 message=f"New task assigned: {task.title}"
+#             )
+
+#         # print("Notification created for electrician")
+#         messages.success(request, "Task added successfully")
+
+#         return redirect('tasks')
+
+#     return render(request, 'add_task.html', {
+#         'jobs': jobs,
+#         'electricians': electricians
+#     })
+
 @jwt_cookie_required
 @role_required(['ADMIN', 'CONTRACTOR'])
 def add_task(request):
@@ -526,20 +565,30 @@ def add_task(request):
     electricians = Electrician.objects.all()
 
     if request.method == 'POST':
-
+        # Fetch the selected Job instance
+        job_id = request.POST['job']
+        job_instance = get_object_or_404(Job, id=job_id)
+        
         deadline = request.POST.get('deadline')
 
         if deadline:
             dt = parse_datetime(deadline)
-            deadline = make_aware(dt)
+            deadline_aware = make_aware(dt)
+            
+            # --- NEW: Check if Task Deadline exceeds Job Deadline ---
+            if deadline_aware.date() > job_instance.deadline:
+                messages.error(request, f"Error: Task deadline cannot exceed the main Job deadline ({job_instance.deadline.strftime('%d-%b-%Y')}).")
+                return redirect('add_task')
+        else:
+            deadline_aware = None
 
         task = Task.objects.create(
             title=request.POST['title'],
             description=request.POST['description'],
-            job_id=request.POST['job'],
+            job_id=job_id,
             electrician_id=request.POST.get('electrician') or None,
             status=request.POST['status'],
-            deadline=deadline 
+            deadline=deadline_aware 
         )
 
         if task.electrician and task.electrician.user:
@@ -548,15 +597,132 @@ def add_task(request):
                 message=f"New task assigned: {task.title}"
             )
 
-        # print("Notification created for electrician")
         messages.success(request, "Task added successfully")
-
         return redirect('tasks')
 
     return render(request, 'add_task.html', {
         'jobs': jobs,
         'electricians': electricians
     })
+
+
+# @jwt_cookie_required
+# def edit_task(request, id):
+#     task = get_object_or_404(Task, id=id)
+#     jobs = Job.objects.all()
+#     electricians = Electrician.objects.all()
+
+#     if request.method == 'POST':
+
+#         # STORE OLD VALUES FIRST
+#         old_status = task.status
+#         new_status = request.POST.get('status')
+#         old_electrician = task.electrician_id
+
+#         # UPDATE FIELDS
+#         task.title = request.POST['title']
+#         task.description = request.POST['description']
+#         task.job_id = request.POST['job']
+#         task.electrician_id = request.POST.get('electrician') or None
+
+#         # SAFE DEADLINE
+#         deadline = request.POST.get('deadline')
+#         if deadline:
+#             dt = parse_datetime(deadline)
+#             task.deadline = make_aware(dt)
+
+#         task.status = new_status
+
+#         # Grab the file if it was uploaded
+#         report = request.FILES.get('report_file')
+#         if report:
+#             task.report_file = report
+
+#         # SAVE FIRST
+#         task.save()
+
+        
+
+#         # ============ NOTIFICATIONS & PAYMENTS ============
+
+#         # 1. TASK COMPLETED → PAYMENT GENERATION & ADMIN CHECK
+#         if new_status == "Completed" and old_status != "Completed":
+            
+#             # --- START OF BRAND NEW TRIGGER CODE ---
+#             if task.electrician and task.electrician.user:
+#                 TaskPayment.objects.get_or_create(
+#                     task=task,
+#                     electrician=task.electrician.user 
+#                 )
+#             # --- END OF BRAND NEW TRIGGER CODE ---
+
+#             admin_users = User.objects.filter(userprofile__role='ADMIN')
+
+#             # Notify Admin that the specific task is done
+#             for admin in admin_users:
+#                 Notification.objects.create(
+#                     user=admin,
+#                     message=f"Task completed: {task.title} by {task.electrician.name}"
+#                 )
+
+#             # --- NEW: CHECK IF THE ENTIRE JOB IS NOW COMPLETE ---
+#             parent_job = task.job
+#             incomplete_tasks_exist = Task.objects.filter(job=parent_job).exclude(status='Completed').exists()
+            
+#             if not incomplete_tasks_exist:
+#                 # Notify Admins that the whole job is done
+#                 for admin in admin_users:
+#                     Notification.objects.create(
+#                         user=admin,
+#                         message=f"🎉 JOB COMPLETE: All tasks for '{parent_job.title}' are finished!"
+#                     )
+                
+#                 # Notify the Lead Contractor (if they aren't also an admin)
+#                 if parent_job.electrician and parent_job.electrician.user:
+#                     if parent_job.electrician.user not in admin_users:
+#                         Notification.objects.create(
+#                             user=parent_job.electrician.user,
+#                             message=f"🎉 JOB COMPLETE: Your site phase '{parent_job.title}' is fully finished!"
+#                         )
+
+#         # 2. TASK UPDATED/ASSIGNED → ELECTRICIAN
+        
+#         # Fix: Convert both IDs to strings so '5' == '5' evaluates properly
+#         old_elec_str = str(old_electrician) if old_electrician else None
+#         new_elec_str = str(task.electrician_id) if task.electrician_id else None
+
+#         # CASE 1: First time assignment (no old electrician)
+#         if not old_elec_str and new_elec_str and task.electrician:
+#             Notification.objects.create(
+#                 user=task.electrician.user,
+#                 message=f"New task assigned: {task.title}"
+#             )
+
+#         # CASE 2: Electrician changed / Reassigned
+#         elif old_elec_str and new_elec_str and old_elec_str != new_elec_str and task.electrician:
+#             Notification.objects.create(
+#                 user=task.electrician.user,
+#                 message=f"New task assigned to you: {task.title}"
+#             )
+
+#         # CASE 3: Only update (same electrician, e.g., deadline or description changed)
+#         elif old_elec_str == new_elec_str and task.electrician and task.electrician.user:
+#             # We don't want to spam them if they just clicked "Completed" themselves
+#             if new_status != "Completed" or old_status == new_status:
+#                 Notification.objects.create(
+#                     user=task.electrician.user,
+#                     message=f"Task updated: {task.title}"
+#                 )
+
+#         messages.info(request, "Task updated successfully")
+#         return redirect('tasks')
+
+
+#     return render(request, 'edit_task.html', {
+#         'task': task,
+#         'jobs': jobs,
+#         'electricians': electricians
+#     })
 
 @jwt_cookie_required
 def edit_task(request, id):
@@ -565,24 +731,33 @@ def edit_task(request, id):
     electricians = Electrician.objects.all()
 
     if request.method == 'POST':
-
         # STORE OLD VALUES FIRST
         old_status = task.status
         new_status = request.POST.get('status')
         old_electrician = task.electrician_id
 
-        # UPDATE FIELDS
-        task.title = request.POST['title']
-        task.description = request.POST['description']
-        task.job_id = request.POST['job']
-        task.electrician_id = request.POST.get('electrician') or None
+        # Fetch the selected Job instance
+        job_id = request.POST['job']
+        job_instance = get_object_or_404(Job, id=job_id)
 
-        # SAFE DEADLINE
+        # SAFE DEADLINE & VALIDATION
         deadline = request.POST.get('deadline')
         if deadline:
             dt = parse_datetime(deadline)
-            task.deadline = make_aware(dt)
+            aware_deadline = make_aware(dt)
+            
+            # --- NEW: Check if Task Deadline exceeds Job Deadline ---
+            if aware_deadline.date() > job_instance.deadline:
+                messages.error(request, f"Error: Task deadline cannot exceed the main Job deadline ({job_instance.deadline.strftime('%d-%b-%Y')}).")
+                return redirect('edit_task', id=task.id)
+            
+            task.deadline = aware_deadline
 
+        # UPDATE FIELDS
+        task.title = request.POST['title']
+        task.description = request.POST['description']
+        task.job_id = job_id
+        task.electrician_id = request.POST.get('electrician') or None
         task.status = new_status
 
         # Grab the file if it was uploaded
@@ -593,82 +768,11 @@ def edit_task(request, id):
         # SAVE FIRST
         task.save()
 
-        
-
-        # ============ NOTIFICATIONS & PAYMENTS ============
-
-        # 1. TASK COMPLETED → PAYMENT GENERATION & ADMIN CHECK
-        if new_status == "Completed" and old_status != "Completed":
-            
-            # --- START OF BRAND NEW TRIGGER CODE ---
-            if task.electrician and task.electrician.user:
-                TaskPayment.objects.get_or_create(
-                    task=task,
-                    electrician=task.electrician.user 
-                )
-            # --- END OF BRAND NEW TRIGGER CODE ---
-
-            admin_users = User.objects.filter(userprofile__role='ADMIN')
-
-            # Notify Admin that the specific task is done
-            for admin in admin_users:
-                Notification.objects.create(
-                    user=admin,
-                    message=f"Task completed: {task.title} by {task.electrician.name}"
-                )
-
-            # --- NEW: CHECK IF THE ENTIRE JOB IS NOW COMPLETE ---
-            parent_job = task.job
-            incomplete_tasks_exist = Task.objects.filter(job=parent_job).exclude(status='Completed').exists()
-            
-            if not incomplete_tasks_exist:
-                # Notify Admins that the whole job is done
-                for admin in admin_users:
-                    Notification.objects.create(
-                        user=admin,
-                        message=f"🎉 JOB COMPLETE: All tasks for '{parent_job.title}' are finished!"
-                    )
-                
-                # Notify the Lead Contractor (if they aren't also an admin)
-                if parent_job.electrician and parent_job.electrician.user:
-                    if parent_job.electrician.user not in admin_users:
-                        Notification.objects.create(
-                            user=parent_job.electrician.user,
-                            message=f"🎉 JOB COMPLETE: Your site phase '{parent_job.title}' is fully finished!"
-                        )
-
-        # 2. TASK UPDATED/ASSIGNED → ELECTRICIAN
-        
-        # Fix: Convert both IDs to strings so '5' == '5' evaluates properly
-        old_elec_str = str(old_electrician) if old_electrician else None
-        new_elec_str = str(task.electrician_id) if task.electrician_id else None
-
-        # CASE 1: First time assignment (no old electrician)
-        if not old_elec_str and new_elec_str and task.electrician:
-            Notification.objects.create(
-                user=task.electrician.user,
-                message=f"New task assigned: {task.title}"
-            )
-
-        # CASE 2: Electrician changed / Reassigned
-        elif old_elec_str and new_elec_str and old_elec_str != new_elec_str and task.electrician:
-            Notification.objects.create(
-                user=task.electrician.user,
-                message=f"New task assigned to you: {task.title}"
-            )
-
-        # CASE 3: Only update (same electrician, e.g., deadline or description changed)
-        elif old_elec_str == new_elec_str and task.electrician and task.electrician.user:
-            # We don't want to spam them if they just clicked "Completed" themselves
-            if new_status != "Completed" or old_status == new_status:
-                Notification.objects.create(
-                    user=task.electrician.user,
-                    message=f"Task updated: {task.title}"
-                )
+        # ============ NOTIFICATIONS ============
+        # ... (Keep all your existing notification code exactly as it is here) ...
 
         messages.info(request, "Task updated successfully")
         return redirect('tasks')
-
 
     return render(request, 'edit_task.html', {
         'task': task,
@@ -691,43 +795,6 @@ def delete_task(request, id):
 
 
 # -------------------- MATERIALS --------------------
-# @jwt_cookie_required
-# def materials_page(request):
-#     materials = Material.objects.select_related('job').all()
-#     jobs = Job.objects.all() # Fetch jobs for the dropdown filter
-
-#     # 1. Get filter parameters from the URL
-#     search_query = request.GET.get('q', '')
-#     job_filter = request.GET.get('job', '')
-#     stock_filter = request.GET.get('stock', '')
-
-#     # 2. Apply Text Search
-#     if search_query:
-#         materials = materials.filter(name__icontains=search_query)
-
-#     # 3. Apply Job Filter
-#     if job_filter:
-#         materials = materials.filter(job_id=job_filter)
-
-#     # 4. Apply Stock Status Filter
-#     if stock_filter == 'out_of_stock':
-#         # Remaining is 0 or less
-#         materials = materials.filter(quantity__lte=F('used_quantity'))
-#     elif stock_filter == 'low_stock':
-#         # Remaining is greater than 0 but less than or equal to 10
-#         materials = materials.annotate(
-#             remaining_stock=F('quantity') - F('used_quantity')
-#         ).filter(remaining_stock__gt=0, remaining_stock__lte=10)
-#     elif stock_filter == 'in_stock':
-#         # Remaining is strictly greater than 0
-#         materials = materials.filter(quantity__gt=F('used_quantity'))
-
-#     return render(request, 'materials.html', {
-#         'materials': materials,
-#         'jobs': jobs, # Pass jobs to the template for the dropdown
-#     })
-
-
 @jwt_cookie_required
 def materials_page(request):
     role = request.user.userprofile.role
@@ -1029,11 +1096,17 @@ def process_payment(request, payment_id):
         payment = TaskPayment.objects.get(id=payment_id)
         settled_amount = request.POST.get('amount')
         
+        # --- NEW: Backend validation for negative or zero amounts ---
+        if float(settled_amount) <= 0:
+            messages.error(request, "Payment amount must be greater than zero.")
+            return redirect('admin_settlement_dashboard')
+        
         payment.amount = settled_amount
         payment.status = 'PAID'
         payment.paid_at = timezone.now()
         payment.save()
         
+        messages.success(request, f"Payment of ₹{settled_amount} settled successfully.")
         return redirect('admin_settlement_dashboard')
 
 @jwt_cookie_required    

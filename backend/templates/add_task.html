@@ -17,6 +17,18 @@
 
         <div class="card shadow-sm border-0 rounded-3">
             <div class="card-body p-4 p-md-5">
+
+                {% if messages %}
+                    <div class="mb-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
                 <form method="POST" enctype="multipart/form-data">
                     {% csrf_token %}
 
@@ -33,10 +45,12 @@
                     <div class="row">
                         <div class="col-md-6 mb-4">
                             <label class="form-label fw-semibold text-dark">Select Job <span class="text-danger">*</span></label>
-                            <select name="job" class="form-select bg-light border-0" required>
-                                <option value="" disabled selected>-- Select --</option>
+                            <select name="job" id="jobSelect" class="form-select" data-deadline required>
+                                <option value="">-- Select Job --</option>
                                 {% for job in jobs %}
-                                    <option value="{{ job.id }}">{{ job.title }}</option>
+                                    <option value="{{ job.id }}" data-deadline="{{ job.deadline|date:'Y-m-d' }}">
+                                        {{ job.title }}
+                                    </option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -54,8 +68,9 @@
 
                     <div class="row">
                         <div class="col-md-6 mb-4">
-                            <label class="form-label fw-semibold text-dark">Task Deadline <span class="text-danger">*</span></label>
-                            <input type="datetime-local" name="deadline" class="form-control bg-light border-0" min="{% now 'Y-m-d\TH:i' %}" required>
+                            <label class="form-label">Task Deadline <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="taskDeadline" name="deadline" disabled required>
+                            <small id="deadlineHelp" class="form-text text-danger">Please select a Job first to unlock the calendar.</small>
                         </div>
 
                         <div class="col-md-6 mb-5">
@@ -78,5 +93,41 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var jobSelect = document.getElementById("jobSelect");
+    var deadlineInput = document.getElementById("taskDeadline");
+    var deadlineHelp = document.getElementById("deadlineHelp");
+
+    // 1. Set the minimum selectable date to TODAY (Handles the red circle in your image)
+    var tzoffset = (new Date()).getTimezoneOffset() * 60000; 
+    var localISOTime = (new Date(Date.now() - tzoffset)).toISOString().slice(0, 16);
+    deadlineInput.min = localISOTime;
+
+    // 2. Listen for when the user selects a Job
+    jobSelect.addEventListener("change", function() {
+        var selectedOption = this.options[this.selectedIndex];
+        var maxDateStr = selectedOption.getAttribute("data-deadline");
+
+        // If they selected a valid job that has a deadline
+        if (maxDateStr && maxDateStr.trim() !== "" && maxDateStr !== "None") {
+            // Set the max date (Handles the blue/yellow circles in your image)
+            deadlineInput.max = maxDateStr + "T23:59:59";
+            
+            // UNLOCK the calendar and hide the red helper text
+            deadlineInput.disabled = false;
+            deadlineHelp.style.display = "none";
+            
+        } else {
+            // If they unselect the job (go back to "-- Select Job --")
+            deadlineInput.disabled = true; // Lock it again
+            deadlineInput.value = ""; // Clear any picked date
+            deadlineInput.removeAttribute("max");
+            deadlineHelp.style.display = "block"; // Show the helper text
+        }
+    });
+});
+</script>
 
 {% endblock %}
