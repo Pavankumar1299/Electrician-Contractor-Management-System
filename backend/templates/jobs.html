@@ -9,9 +9,13 @@
 
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h3 class="fw-bold text-dark m-0">Jobs Management</h3>
-    {% if request.user.userprofile.role != "ELECTRICIAN" %}
+
+    {% with role=request.user.userprofile.role %}
+    
+    {% if role|upper == "ADMIN" %}
         <a href="{% url 'add_job' %}" class="btn btn-primary shadow-sm"><i class="bi bi-plus-circle me-1"></i> Add Job</a>
     {% endif %}
+    {% endwith %}
 </div>
 
 {% if messages %}
@@ -51,7 +55,9 @@
                         <th class="ps-4">Title</th>
                         <th>Location</th>
                         <th>Deadline</th>
-                        <th>Electrician</th>
+                        <th>Progress</th>
+                        <th>Status</th> 
+                        <th>Contractor</th>
                         <th>Image</th>
                         <th class="text-end pe-4">Actions</th>
                     </tr>
@@ -62,9 +68,32 @@
                         <td class="ps-4 fw-medium text-dark">{{ job.title }}</td>
                         <td><i class="bi bi-geo-alt text-muted me-1"></i> {{ job.location }}</td>
                         <td>{{ job.deadline|date:"M d, Y" }}</td>
+                        <td class="align-middle">
+                            <div class="d-flex align-items-center">
+                                <span class="me-2 small fw-bold">{{ job.progress_pct }}%</span>
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar {% if job.progress_pct == 100 %}bg-success{% else %}bg-primary{% endif %}" 
+                                        role="progressbar" 
+                                        style="width: {{ job.progress_pct }}%;" 
+                                        aria-valuenow="{{ job.progress_pct }}" 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ job.completed_tasks }}/{{ job.total_tasks }} Tasks</small>
+                        </td>
+
+                        <td class="align-middle">
+                            {% if job.status == 'COMPLETED' %}
+                                <span class="badge bg-success bg-opacity-10 text-success px-3 rounded-pill">Completed</span>
+                            {% else %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary px-3 rounded-pill">Active</span>
+                            {% endif %}
+                        </td>
                         <td>
-                            {% if job.electrician %}
-                                {{ job.electrician.name }}
+                            {% if job.assigned_contractor %}
+                                {{ job.assigned_contractor.username }}
                             {% else %}
                                 <span class="text-muted fst-italic">Unassigned</span>
                             {% endif %}
@@ -77,12 +106,16 @@
                             {% endif %}
                         </td>
                         <td class="text-end pe-4">
-                            {% if request.user.userprofile.role != "ELECTRICIAN" %}
+                            
+                            {% with role=request.user.userprofile.role %}
+    
+                            {% if role|upper == "ADMIN" %}
                                 <a href="{% url 'edit_job' job.id %}" class="btn btn-sm btn-light text-primary" data-bs-toggle="tooltip" title="Edit"><i class="bi bi-pencil-square"></i></a>
                                 <a href="{% url 'delete_job' job.id %}" class="btn btn-sm btn-light text-danger" data-bs-toggle="tooltip" title="Delete"><i class="bi bi-trash"></i></a>
                             {% else %}
                                 <a href="{% url 'edit_job' job.id %}" class="btn btn-sm btn-light text-info"><i class="bi bi-eye"></i> View</a>
                             {% endif %}
+                            {% endwith %}
                         </td>
                     </tr>
                     {% empty %}

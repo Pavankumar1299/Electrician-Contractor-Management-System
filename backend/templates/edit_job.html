@@ -42,11 +42,11 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-semibold text-dark">Assign Electrician</label>
-                        <select name="electrician" class="form-select bg-light border-0" required>
+                        <label class="form-label fw-semibold text-dark">Assign Contractor</label>
+                        <select name="contractor" class="form-select bg-light border-0" required>
                             <option value="" disabled>-- Select --</option>
-                            {% for e in electricians %}
-                                <option value="{{ e.id }}" {% if job.electrician and job.electrician.id == e.id %}selected{% endif %}>{{ e.name }}</option>
+                            {% for c in contractors %}
+                                <option value="{{ c.id }}" {% if job.assigned_contractor and job.assigned_contractor.id == c.id %}selected{% endif %}>{{ c.username }}</option>
                             {% endfor %}
                         </select>
                     </div>

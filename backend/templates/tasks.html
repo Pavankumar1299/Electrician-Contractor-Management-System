@@ -69,7 +69,11 @@
                     <tr>
                         <th class="ps-4">Title</th>
                         <th>Job</th>
-                        <th>Electrician</th>
+                        {% if request.user.userprofile.role == 'ELECTRICIAN' %}
+                            <th>Contractor Contact</th>
+                        {% else %}
+                            <th>Electrician</th>
+                        {% endif %}
                         <th>Deadline</th>
                         <th>Status</th>
                         <th>Report</th>
@@ -81,18 +85,36 @@
                     <tr>
                         <td class="ps-4 fw-medium text-dark">{{ task.title }}</td>
                         <td class="text-muted">{{ task.job.title }}</td>
-                        <td>
-                            {% if task.electrician %}
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-2" style="width: 30px; height: 30px; font-size: 12px;">
-                                        {{ task.electrician.name|make_list|first|upper }}
-                                    </div>
-                                    {{ task.electrician.name }}
+                        
+                        {% if request.user.userprofile.role == 'ELECTRICIAN' %}
+                            <td class="text-nowrap align-middle">
+                                <div class="d-flex flex-column justify-content-center gap-1">
+                                    <span class="fw-bold text-dark">
+                                        <i class="bi bi-person-badge text-primary me-1"></i> 
+                                        {{ task.job.assigned_contractor.first_name|default:task.job.assigned_contractor.username }}
+                                    </span>
+                                    <span class="text-muted" style="font-size: 0.85rem;">
+                                        <i class="bi bi-telephone-fill text-success me-1"></i> 
+                                        <a href="tel:{{ task.job.assigned_contractor.userprofile.phone }}" class="text-decoration-none text-muted">
+                                            {{ task.job.assigned_contractor.userprofile.phone }}
+                                        </a>
+                                    </span>
                                 </div>
-                            {% else %}
-                                <span class="text-muted fst-italic">Unassigned</span>
-                            {% endif %}
-                        </td>
+                            </td>
+                        {% else %}
+                            <td>
+                                {% if task.electrician %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                            {{ task.electrician.name|make_list|first|upper }}
+                                        </div>
+                                        <span class="fw-medium">{{ task.electrician.name }}</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted fst-italic">Unassigned</span>
+                                {% endif %}
+                            </td>
+                        {% endif %}
                         <td>{{ task.deadline|date:"M d, Y" }}</td>
                         <td>
                             {% if task.status == 'Completed' %}

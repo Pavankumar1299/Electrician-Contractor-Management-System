@@ -6,7 +6,6 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.conf import settings
-# from .models import Task
 
 # --------------------- USER PROFILES --------------------
 class UserProfile(models.Model):
@@ -67,17 +66,26 @@ class Job(models.Model):
     location = models.CharField(max_length=200)
     deadline = models.DateField()
 
-    electrician = models.ForeignKey(
-        Electrician,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="jobs"
+    assigned_contractor = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='contractor_jobs',
+        limit_choices_to={'userprofile__role': 'CONTRACTOR'} # Ensures only Contractors can be picked
     )
 
     # NEW: File Upload Feature for Job Images
     image = models.ImageField(upload_to='job_images/', null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # --- NEW FIELD ---
+    STATUS_CHOICES = (
+        ('ACTIVE', 'Active'),
+        ('COMPLETED', 'Completed'),
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
 
     def __str__(self):
         return self.title
@@ -138,7 +146,7 @@ class Material(models.Model):
     def remaining(self):
         return self.quantity - self.used_quantity
     
-
+# --------------------- TASK PAYMENTS --------------------
 class TaskPayment(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending Verification'),

@@ -1,6 +1,26 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
+
+{% if messages %}
+<div id="alert-box" style="position: fixed; top: 80px;right: 20px; width: 300px; z-index: 9999;">
+    {% for message in messages %}
+    <div class="alert alert-success d-flex align-items-center justify-content-between shadow-sm mb-2 rounded-3">
+        <div>
+            <i class="bi bi-check-circle-fill me-2 text-success"></i>
+            {{ message }}
+        </div>
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h3 class="fw-bold text-dark m-0">Contractor Management</h3>
     <a href="{% url 'add_contractor' %}" class="btn btn-primary shadow-sm"><i class="bi bi-building-add me-1"></i> Add Contractor</a>
@@ -64,4 +84,16 @@
         </div>
     </div>
 </div>
+
+<script>
+setTimeout(() => {
+    let alertBox = document.getElementById("alert-box");
+    if (alertBox) {
+        alertBox.style.transition = "opacity 0.5s ease";
+        alertBox.style.opacity = "0";
+        setTimeout(() => alertBox.remove(), 500);
+    }
+}, 5000);
+</script>
+
 {% endblock %}

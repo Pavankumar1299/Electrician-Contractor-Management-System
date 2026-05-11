@@ -35,10 +35,16 @@
     <form method="POST">
         {% csrf_token %}
 
-        {% if error %}
-        <div class="alert alert-danger border-0 rounded-3 d-flex align-items-center shadow-sm">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ error }}
-        </div>
+        {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                    <div id="alert-box" class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show shadow-sm border-0 rounded-3 d-flex align-items-center" role="alert">
+                        <i class="bi {% if message.tags == 'error' %}bi-exclamation-triangle-fill{% elif message.tags == 'success' %}bi-check-circle-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
+                        <div>{{ message }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
         {% endif %}
 
         <div class="mb-3">
@@ -62,8 +68,12 @@
             </select>
         </div>
 
-        <div class="mb-4">
+        <div class="mb-3">
             <input type="password" name="password" class="form-control form-control-md bg-light border-0" placeholder="Create Password" required>
+        </div>
+
+        <div class="mb-4">
+            <input type="password" name="confirm_password" class="form-control form-control-md bg-light border-0" placeholder="Confirm Password" required>
         </div>
 
         <button class="btn btn-success btn-md w-100 mb-4 shadow-sm">Complete Registration</button>
@@ -75,6 +85,17 @@
     </p>
 
 </div>
+
+<script>
+setTimeout(() => {
+    let alertBox = document.getElementById("alert-box");
+    if (alertBox) {
+        alertBox.style.transition = "opacity 0.5s ease";
+        alertBox.style.opacity = "0";
+        setTimeout(() => alertBox.remove(), 500);
+    }
+}, 5000);
+</script>
 
 </body>
 </html>

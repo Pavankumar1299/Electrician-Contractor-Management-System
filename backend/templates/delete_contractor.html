@@ -1,5 +1,12 @@
 {% extends 'base.html' %}
 {% block content %}
+
+<style>
+    .card:hover {
+        transform: translateY(0px);
+    }
+</style>
+
 <div class="row justify-content-center mt-5">
     <div class="col-md-8 col-lg-6 text-center">
         <div class="card shadow border-0 rounded-4 overflow-hidden">
@@ -8,7 +15,7 @@
                 <h3 class="fw-bold text-dark mb-3">Delete Contractor?</h3>
                 <p class="text-muted mb-4">Are you sure you want to remove this contractor? This will also remove their login access.</p>
                 <div class="bg-light rounded-3 p-3 text-start mb-4">
-                    <div class="mb-2"><strong>Name:</strong> <span class="text-dark">{{ contractor.first_name }}</span></div>
+                    <div class="mb-2"><strong>Name:</strong> <span class="text-dark">{{ contractor.username }}</span></div>
                     <div class="mb-2"><strong>Phone:</strong> <span class="text-dark">{{ contractor.userprofile.phone }}</span></div>
                     <div><strong>Email:</strong> <span class="text-dark">{{ contractor.email }}</span></div>
                 </div>

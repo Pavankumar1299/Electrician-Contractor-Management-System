@@ -51,6 +51,7 @@ urlpatterns = [
 # Profile
     path('profile/', views.profile_page, name='profile'),
     path('profile/update/', views.update_profile, name='update_profile'),
+    path('change-password/', views.change_password, name='change_password'),
 
 # Notifications
     path('notifications/', views.notifications_page, name='notifications'),

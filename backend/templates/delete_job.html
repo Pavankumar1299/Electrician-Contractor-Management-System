@@ -25,9 +25,9 @@
                     <div class="mb-2"><strong>Title:</strong> <span class="text-dark">{{ job.title }}</span></div>
                     <div class="mb-2"><strong>Location:</strong> <span class="text-dark">{{ job.location }}</span></div>
                     <div class="mb-2"><strong>Deadline:</strong> <span class="text-dark">{{ job.deadline }}</span></div>
-                    <div><strong>Electrician:</strong> 
+                    <div><strong>Contractor:</strong> 
                         <span class="text-dark">
-                            {% if job.electrician %}{{ job.electrician.name }}{% else %}Not Assigned{% endif %}
+                            {% if job.assigned_contractor %}{{ job.assigned_contractor.username }}{% else %}Not Assigned{% endif %}
                         </span>
                     </div>
                 </div>

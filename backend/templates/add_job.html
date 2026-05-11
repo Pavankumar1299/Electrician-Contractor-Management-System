@@ -25,8 +25,8 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-semibold text-dark">Description</label>
-                        <textarea name="description" class="form-control bg-light border-0" rows="4" placeholder="Detailed scope of work..."></textarea>
+                        <label class="form-label fw-semibold text-dark">Description <span class="text-danger">*</span></label>
+                        <textarea name="description" class="form-control bg-light border-0" rows="4" placeholder="Detailed scope of work..." required></textarea>
                     </div>
 
                     <div class="row">
@@ -45,11 +45,11 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-semibold text-dark">Assign Electrician</label>
-                        <select name="electrician" class="form-select bg-light border-0">
-                            <option value="" selected>-- Leave Unassigned --</option>
-                            {% for e in electricians %}
-                                <option value="{{ e.id }}">{{ e.name }}</option>
+                        <label class="form-label fw-semibold text-dark">Assign Contractor <span class="text-danger">*</span></label>
+                        <select name="contractor" class="form-select" required>
+                            <option value="">-- Select Contractor --</option>
+                            {% for contractor in contractors %}
+                                <option value="{{ contractor.id }}">{{ contractor.username }}</option>
                             {% endfor %}
                         </select>
                     </div>

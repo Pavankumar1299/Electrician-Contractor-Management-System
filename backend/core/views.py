@@ -15,6 +15,11 @@ from datetime import timedelta
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import F
 import random
+import re
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.models import Count, Q
+
 
 
 
@@ -66,17 +71,61 @@ def register_view(request):
         email = request.POST.get('email')
         phone = request.POST.get('phone')
         password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password') # NEW: Grab confirm password
         role = request.POST.get('role')
 
+        # ==========================================
+        # 1. ROLE & USERNAME VALIDATION
+        # ==========================================
         if not role:
-            return render(request, 'register.html', {'error': 'Please select a role'})
+            messages.error(request, "Please select a role.")
+            return redirect('register')
+
+        if len(name) < 4:
+            messages.error(request, "Username must be at least 4 characters long.")
+            return redirect('register')
 
         if User.objects.filter(username=name).exists():
-            return render(request, 'register.html', {'error': 'Username taken'})
+            messages.error(request, "Username is already taken. Please choose another.")
+            return redirect('register')
         
-        if User.objects.filter(email=email).exists():
-            return render(request, 'register.html', {'error': 'Email already registered'})
+        # ==========================================
+        # 2. EMAIL VALIDATION
+        # ==========================================
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            messages.error(request, "Please enter a valid email address.")
+            return redirect('register')
 
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "This email is already registered.")
+            return redirect('register')
+
+        # ==========================================
+        # 3. PHONE NUMBER VALIDATION
+        # ==========================================
+        if not re.match(r'^\d{10}$', phone):
+            messages.error(request, "Invalid phone number. It must be exactly 10 digits.")
+            return redirect('register')
+            
+        if UserProfile.objects.filter(phone=phone).exists():
+            messages.error(request, "This phone number is already registered to another account.")
+            return redirect('register')
+
+        # ==========================================
+        # 4. PASSWORD VALIDATION
+        # ==========================================
+        if password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('register')
+
+        # Require at least 8 characters, 1 letter, and 1 number
+        if len(password) < 8 or not re.search(r'[A-Za-z]', password) or not re.search(r'\d', password):
+            messages.error(request, "Password must be at least 8 characters long and contain at least one letter and one number.")
+            return redirect('register')
+
+        # ==========================================
+        # ALL CHECKS PASSED -> CREATE THE ACCOUNT
+        # ==========================================
         user = User.objects.create_user(
             username=name,
             email=email,
@@ -92,7 +141,7 @@ def register_view(request):
                 experience=0
             )
 
-        # assign role here
+        # Assign role and phone to the profile
         profile = user.userprofile
         profile.role = role
         profile.phone = phone
@@ -100,8 +149,9 @@ def register_view(request):
 
         refresh = RefreshToken.for_user(user)
 
-        messages.success(request, "Account created successfully")
+        messages.success(request, "Account created successfully!")
         request.session.save()  # Ensure session is saved before setting cookie
+        
         response = redirect('dashboard')
         response.set_cookie(
             key='access_token',
@@ -146,6 +196,59 @@ def login_view(request):
     return render(request, 'login.html')
 
 
+# -------------------- CHANGE PASSWORD --------------------
+@jwt_cookie_required
+def change_password(request):
+    if request.method == 'POST':
+        old_password = request.POST.get('old_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        user = request.user
+
+        # 1. VERIFY OLD PASSWORD
+        if not user.check_password(old_password):
+            messages.error(request, "Incorrect current password.")
+            return redirect('change_password')
+
+        # 2. MATCH CHECK
+        if new_password != confirm_password:
+            messages.error(request, "New passwords do not match.")
+            return redirect('change_password')
+
+        # 3. PREVENT REUSING OLD PASSWORD
+        if old_password == new_password:
+            messages.error(request, "New password cannot be the same as the old password.")
+            return redirect('change_password')
+
+        # 4. REGEX STRENGTH VALIDATION (Matches your signup rules!)
+        if len(new_password) < 8 or not re.search(r'[A-Za-z]', new_password) or not re.search(r'\d', new_password):
+            messages.error(request, "Password must be at least 8 characters long and contain at least one letter and one number.")
+            return redirect('change_password')
+
+        # ==========================================
+        # 5. ALL CHECKS PASSED -> UPDATE PASSWORD
+        # ==========================================
+        user.set_password(new_password)
+        user.save()
+
+        # 6. RE-ISSUE JWT COOKIE SO THEY DON'T GET LOGGED OUT
+        refresh = RefreshToken.for_user(user)
+        
+        messages.success(request, "Your password has been updated securely.")
+        
+        # Redirect back to profile, but attach the new cookie
+        response = redirect('profile') 
+        response.set_cookie(
+            key='access_token',
+            value=str(refresh.access_token),
+            httponly=True,
+            samesite='Lax'
+        )
+        return response
+
+    return render(request, 'change_password.html')
+
+
 # ---------------- LOGOUT ----------------
 def logout_view(request):
     response = redirect('login') 
@@ -164,54 +267,85 @@ def home_page(request):
 def dashboard_view(request):
     role = request.user.userprofile.role
 
-    # ROLE BASED DATA
+    # ==========================================
+    # 1. SECURE DATA FENCING BY ROLE
+    # ==========================================
     if role == 'ELECTRICIAN':
         tasks = Task.objects.filter(electrician__user=request.user)
-        jobs = Job.objects.filter(electrician__user=request.user)
+        jobs = Job.objects.filter(tasks__electrician__user=request.user).distinct()
+        electricians_count = 0  # Not relevant for Electrician dashboard
+        contractors_count = 0
+
+    elif role == 'CONTRACTOR':
+        # --- NEW: Fenced Data for Contractors ---
+        jobs = Job.objects.filter(assigned_contractor=request.user)
+        tasks = Task.objects.filter(job__assigned_contractor=request.user)
+        
+        # Only count electricians who have tasks under this specific Contractor's jobs
+        electricians_count = Electrician.objects.filter(
+            tasks__job__assigned_contractor=request.user
+        ).distinct().count()
+        
+        contractors_count = 0 # Not relevant for Contractor dashboard
+
     else:
+        # ADMIN sees absolutely everything
         tasks = Task.objects.all()
         jobs = Job.objects.all()
+        electricians_count = Electrician.objects.count()
+        contractors_count = UserProfile.objects.filter(role='CONTRACTOR').count()
 
-    electricians_count = Electrician.objects.count()
-    contractors_count = UserProfile.objects.filter(role='CONTRACTOR').count()
-
+    # ==========================================
+    # 2. DYNAMIC METRICS (Based on fenced data)
+    # ==========================================
     pending_tasks = tasks.filter(status='Pending').count()
     in_progress_tasks = tasks.filter(status='In Progress').count()
     completed_tasks = tasks.filter(status='Completed').count()
 
     total_tasks = tasks.count()
     completion_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Recent tasks overview will now securely show only the contractor's tasks
     recent_tasks = tasks.order_by('-updated_at')[:5]
 
-    my_payments = TaskPayment.objects.filter(electrician=request.user).select_related('task')
-    total_earned = sum(p.amount for p in my_payments if p.status == 'PAID' and p.amount)
-    
-    # DEADLINE ALERTS (only for electrician)
+    # ==========================================
+    # 3. NOTIFICATIONS LOGIC
+    # ==========================================
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+
+    # Fulfilling your requirement: Admin only sees 'Completed' notifications
+    if role == 'ADMIN':
+        notifications = notifications.filter(message__icontains='Completed')
+
+    unread_count = notifications.filter(is_read=False).count()
+
+    # ==========================================
+    # 4. FINANCIALS & ALERTS (Electrician Only)
+    # ==========================================
+    total_earned = 0
     deadline_notifications = []
 
     if role == 'ELECTRICIAN':
+        # Financials
+        my_payments = TaskPayment.objects.filter(electrician=request.user).select_related('task')
+        total_earned = sum(p.amount for p in my_payments if p.status == 'PAID' and p.amount)
+
+        # Deadline Alerts
         upcoming_tasks = tasks.filter(
             deadline__isnull=False,
             status__in=['Pending', 'In Progress']
         )
-
         for task in upcoming_tasks:
             time_left = task.deadline - timezone.now()
-
             if timedelta(0) < time_left <= timedelta(hours=24):
                 deadline_notifications.append({
                     'message': f"⚠️ Deadline approaching: {task.title}",
                     'time': "Due soon"
                 })
-        # new line end
 
-    unread_count = Notification.objects.filter(
-        user=request.user,
-        is_read=False
-    ).count()
-
+    # ==========================================
+    # 5. CONTEXT RENDERING
+    # ==========================================
     context = {
         'electricians_count': electricians_count,
         'contractors_count': contractors_count,
@@ -223,7 +357,7 @@ def dashboard_view(request):
         'completed_tasks': completed_tasks,
 
         'completion_rate': round(completion_rate, 2),
-        'notifications': notifications,
+        'notifications': notifications[:10], # Limit to 10 so the UI doesn't break
         'deadline_notifications': deadline_notifications,
 
         'role': role,
@@ -282,21 +416,43 @@ def add_contractor(request):
         email = request.POST['email']
         phone = request.POST['phone']
 
-        # 1. Create a safe, unique username for the built-in User model
+        # 1. VALIDATION
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            messages.error(request, "Invalid email format.")
+            return redirect('add_contractor')
+            
+        if not re.match(r'^\d{10}$', phone):
+            messages.error(request, "Phone number must be exactly 10 digits.")
+            return redirect('add_contractor')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "An account with this email already exists.")
+            return redirect('add_contractor')
+
+        # 2. CREATE ACCOUNT
         safe_username = f"{name.replace(' ', '').lower()}_{random.randint(1000, 9999)}"
+        default_password = 'ecms@123'
         
-        # 2. Create the User (Password is defaulted since they are added by Admin)
-        user = User.objects.create_user(username=safe_username, email=email, password='defaultpassword123')
+        user = User.objects.create_user(username=safe_username, email=email, password=default_password)
         user.first_name = name
         user.save()
 
-        # 3. Update the automatically created UserProfile
         profile = user.userprofile
         profile.role = 'CONTRACTOR'
         profile.phone = phone
         profile.save()
 
-        messages.success(request, "Contractor added successfully")
+        # 3. SEND ONBOARDING EMAIL
+        subject = 'Welcome to ECMS - Your Contractor Account'
+        message = f"Hello {name},\n\nAn Admin has created a Contractor account for you on the ECMS platform.\n\nHere are your login credentials:\nUsername: {safe_username}\nPassword: {default_password}\n\nPlease log in and change your password immediately.\n\nBest,\nECMS Admin Team"
+        
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            messages.success(request, f"Contractor added! Login details emailed to {email}.")
+        except Exception as e:
+            # If the email fails (e.g., no internet), we don't want the app to crash
+            messages.warning(request, "Contractor added, but the email failed to send. Please share credentials manually.")
+
         return redirect('contractors')
 
     return render(request, 'add_contractor.html')
@@ -338,9 +494,9 @@ def delete_contractor(request, id):
 
 
 # -------------------- ELECTRICIANS --------------------
-@jwt_cookie_required
-@login_required
-def electricians_view(request):
+# @jwt_cookie_required
+# @login_required
+# def electricians_view(request):
     name = request.GET.get('name')
 
     if name:
@@ -352,18 +508,93 @@ def electricians_view(request):
         'electricians': electricians
     })
 
+
+# --------------------- ELECTRICIANS --------------------
+@jwt_cookie_required
+@login_required
+def electricians_view(request):
+    role = request.user.userprofile.role
+    name = request.GET.get('name')
+
+    # ==========================================
+    # 1. SECURE DATA FENCING BY ROLE
+    # ==========================================
+    if role == 'CONTRACTOR':
+        # Contractor ONLY sees electricians assigned to their specific jobs
+        # Note the use of 'tasks__...' and distinct() so an electrician isn't listed twice
+        base_query = Electrician.objects.filter(
+            tasks__job__assigned_contractor=request.user
+        ).distinct()
+    else:
+        # Admins see the entire workforce
+        base_query = Electrician.objects.all()
+
+    # ==========================================
+    # 2. APPLY SEARCH FILTER
+    # ==========================================
+    if name:
+        electricians = base_query.filter(name__icontains=name)
+    else:
+        electricians = base_query
+
+    return render(request, 'electricians.html', {
+        'electricians': electricians
+    })
+
 @jwt_cookie_required
 @role_required(['ADMIN'])
 def add_electrician(request):
     if request.method == 'POST':
+        name = request.POST['name']
+        phone = request.POST['phone']
+        email = request.POST['email']
+        experience = request.POST.get('experience', 0)
+
+        # 1. VALIDATION
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            messages.error(request, "Invalid email format.")
+            return redirect('add_electrician')
+            
+        if not re.match(r'^\d{10}$', phone):
+            messages.error(request, "Phone number must be exactly 10 digits.")
+            return redirect('add_electrician')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "An account with this email already exists.")
+            return redirect('add_electrician')
+
+        # 2. CREATE USER LOGIN ACCOUNT (Crucial Fix!)
+        safe_username = f"{name.replace(' ', '').lower()}_{random.randint(1000, 9999)}"
+        default_password = 'ecms@123'
+        
+        user = User.objects.create_user(username=safe_username, email=email, password=default_password)
+        user.first_name = name
+        user.save()
+
+        profile = user.userprofile
+        profile.role = 'ELECTRICIAN'
+        profile.phone = phone
+        profile.save()
+
+        # 3. CREATE ELECTRICIAN RECORD
         Electrician.objects.create(
-            name=request.POST['name'],
-            phone=request.POST['phone'],
-            email=request.POST['email'],
-            experience=request.POST['experience']
+            user=user, # Link it to the login account
+            name=name,
+            phone=phone,
+            email=email,
+            experience=experience
         )
 
-        messages.success(request, "Electrician added successfully")
+        # 4. SEND ONBOARDING EMAIL
+        subject = 'Welcome to ECMS - Your Electrician Account'
+        message = f"Hello {name},\n\nAn Admin has created an Electrician profile for you on the ECMS platform.\n\nHere are your login credentials:\nUsername: {safe_username}\nPassword: {default_password}\n\nPlease log in and change your password immediately.\n\nBest,\nECMS Admin Team"
+        
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            messages.success(request, f"Electrician added! Login details emailed to {email}.")
+        except Exception as e:
+            messages.warning(request, "Electrician added, but the email failed to send. Please share credentials manually.")
+
         return redirect('electricians')
 
     return render(request, 'add_electrician.html')
@@ -406,68 +637,105 @@ def delete_electrician(request, id):
 # -------------------- JOBS --------------------
 @jwt_cookie_required
 def jobs_page(request):
+    role = request.user.userprofile.role
     query = request.GET.get('q')
 
-    if query:
-        jobs = Job.objects.filter(title__icontains=query)
-    else:
-        jobs = Job.objects.all()
+    # 1. Base Query with smart counting
+    # This annotates each job with total_tasks and completed_tasks
+    base_query = Job.objects.annotate(
+        total_tasks=Count('tasks'),
+        completed_tasks=Count('tasks', filter=Q(tasks__status='Completed'))
+    )
 
-    # jobs = Job.objects.select_related('electrician').all()
+    if role == 'CONTRACTOR':
+        jobs = base_query.filter(assigned_contractor=request.user)
+    else:
+        jobs = base_query.all()
+
+    if query:
+        jobs = jobs.filter(title__icontains=query)
+
+    # 2. Calculate the percentage for each job
+    for job in jobs:
+        if job.total_tasks > 0:
+            job.progress_pct = int((job.completed_tasks / job.total_tasks) * 100)
+        else:
+            job.progress_pct = 0
+
     return render(request, 'jobs.html', {'jobs': jobs})
 
 @jwt_cookie_required
 @role_required(['ADMIN', 'CONTRACTOR'])
 def add_job(request):
-    electricians = Electrician.objects.all()
+    # Fetch all users whose profile role is 'CONTRACTOR'
+    contractors = User.objects.filter(userprofile__role='CONTRACTOR')
 
     if request.method == 'POST':
-        electrician_id = request.POST.get('electrician')
+        # Grab the contractor ID from the form
+        contractor_id = request.POST.get('contractor')
 
         Job.objects.create(
             title=request.POST['title'],
             description=request.POST['description'],
             location=request.POST['location'],
             deadline=request.POST['deadline'],
-            electrician_id=electrician_id if electrician_id else None,
+            
+            # --- NEW: Assign to Contractor instead of Electrician ---
+            assigned_contractor_id=contractor_id if contractor_id else None,
 
-            # Just add this line to grab the image file!
             image=request.FILES.get('image')
         )
+
+        # ... your existing Job.objects.create code ...
+        job = Job.objects.last() # Get the job we just created
+
+        # --- NEW: Notify the Contractor ---
+        if job.assigned_contractor:
+            from .models import Notification # ensure Notification is imported
+            Notification.objects.create(
+                user=job.assigned_contractor,
+                message=f"New Job Assigned: {job.title} at {job.location}"
+            )
 
         messages.success(request, "Job added successfully")
         return redirect('jobs')
 
     return render(request, 'add_job.html', {
-        'electricians': electricians
+        'contractors': contractors # Pass contractors to the template
     })
 
 @jwt_cookie_required
 @role_required(['ADMIN', 'CONTRACTOR'])
 def edit_job(request, id):
     job = get_object_or_404(Job, id=id)
-    electricians = Electrician.objects.all()
+    
+    # --- NEW: Fetch Contractors instead of Electricians ---
+    from django.contrib.auth.models import User
+    contractors = User.objects.filter(userprofile__role='CONTRACTOR')
 
     if request.method == 'POST':
+        # Catch the new contractor input
+        contractor_id = request.POST.get('contractor')
+
         job.title = request.POST['title']
         job.description = request.POST['description']
         job.location = request.POST['location']
         job.deadline = request.POST['deadline']
-        job.electrician_id = request.POST.get('electrician') or None
+        
+        # --- NEW: Save to the correct database field ---
+        job.assigned_contractor_id = contractor_id if contractor_id else None
 
-        # Grab the new image if one was uploaded
-        new_image = request.FILES.get('image')
-        if new_image:
-            job.image = new_image
+        if request.FILES.get('image'):
+            job.image = request.FILES.get('image')
 
         job.save()
 
-        messages.info(request, "Job updated successfully")
+        messages.success(request, "Job updated successfully")
         return redirect('jobs')
-    
+
     return render(request, 'edit_job.html', {
         'job': job,
-        'electricians': electricians
+        'contractors': contractors # Pass contractors to the template
     })
 
 @jwt_cookie_required
@@ -495,14 +763,16 @@ def tasks_page(request):
     if role == 'ELECTRICIAN':
         # Electricians only see their own tasks
         tasks = Task.objects.filter(electrician__user=request.user).select_related('job')
-
-        # Pro-Tip: Also limit the dropdown to only show jobs they are assigned to!
-        # jobs = Job.objects.filter(electrician__user=request.user) 
-        
-        # Fetch all unique jobs that are linked to the user's assigned tasks!
         jobs = Job.objects.filter(tasks__electrician__user=request.user).distinct()
+        
+    elif role == 'CONTRACTOR':
+        # --- NEW: Contractors only see tasks belonging to their assigned jobs ---
+        tasks = Task.objects.filter(job__assigned_contractor=request.user).select_related('job')
+        # The dropdown should also only show their jobs
+        jobs = Job.objects.filter(assigned_contractor=request.user)
+        
     else:
-        # Admins and Contractors see everything
+        # Admins see everything
         tasks = Task.objects.select_related('job').all()
         jobs = Job.objects.all()
 
@@ -518,45 +788,6 @@ def tasks_page(request):
         'tasks': tasks,
         'jobs': jobs,
     })
-
-# @jwt_cookie_required
-# @role_required(['ADMIN', 'CONTRACTOR'])
-# def add_task(request):
-#     jobs = Job.objects.all()
-#     electricians = Electrician.objects.all()
-
-#     if request.method == 'POST':
-
-#         deadline = request.POST.get('deadline')
-
-#         if deadline:
-#             dt = parse_datetime(deadline)
-#             deadline = make_aware(dt)
-
-#         task = Task.objects.create(
-#             title=request.POST['title'],
-#             description=request.POST['description'],
-#             job_id=request.POST['job'],
-#             electrician_id=request.POST.get('electrician') or None,
-#             status=request.POST['status'],
-#             deadline=deadline 
-#         )
-
-#         if task.electrician and task.electrician.user:
-#             Notification.objects.create(
-#                 user=task.electrician.user,
-#                 message=f"New task assigned: {task.title}"
-#             )
-
-#         # print("Notification created for electrician")
-#         messages.success(request, "Task added successfully")
-
-#         return redirect('tasks')
-
-#     return render(request, 'add_task.html', {
-#         'jobs': jobs,
-#         'electricians': electricians
-#     })
 
 @jwt_cookie_required
 @role_required(['ADMIN', 'CONTRACTOR'])
@@ -591,10 +822,12 @@ def add_task(request):
             deadline=deadline_aware 
         )
 
+        # --- NEW: Notify the Electrician ---
         if task.electrician and task.electrician.user:
+            from .models import Notification
             Notification.objects.create(
                 user=task.electrician.user,
-                message=f"New task assigned: {task.title}"
+                message=f"New Task Assigned: {task.title}"
             )
 
         messages.success(request, "Task added successfully")
@@ -604,125 +837,6 @@ def add_task(request):
         'jobs': jobs,
         'electricians': electricians
     })
-
-
-# @jwt_cookie_required
-# def edit_task(request, id):
-#     task = get_object_or_404(Task, id=id)
-#     jobs = Job.objects.all()
-#     electricians = Electrician.objects.all()
-
-#     if request.method == 'POST':
-
-#         # STORE OLD VALUES FIRST
-#         old_status = task.status
-#         new_status = request.POST.get('status')
-#         old_electrician = task.electrician_id
-
-#         # UPDATE FIELDS
-#         task.title = request.POST['title']
-#         task.description = request.POST['description']
-#         task.job_id = request.POST['job']
-#         task.electrician_id = request.POST.get('electrician') or None
-
-#         # SAFE DEADLINE
-#         deadline = request.POST.get('deadline')
-#         if deadline:
-#             dt = parse_datetime(deadline)
-#             task.deadline = make_aware(dt)
-
-#         task.status = new_status
-
-#         # Grab the file if it was uploaded
-#         report = request.FILES.get('report_file')
-#         if report:
-#             task.report_file = report
-
-#         # SAVE FIRST
-#         task.save()
-
-        
-
-#         # ============ NOTIFICATIONS & PAYMENTS ============
-
-#         # 1. TASK COMPLETED → PAYMENT GENERATION & ADMIN CHECK
-#         if new_status == "Completed" and old_status != "Completed":
-            
-#             # --- START OF BRAND NEW TRIGGER CODE ---
-#             if task.electrician and task.electrician.user:
-#                 TaskPayment.objects.get_or_create(
-#                     task=task,
-#                     electrician=task.electrician.user 
-#                 )
-#             # --- END OF BRAND NEW TRIGGER CODE ---
-
-#             admin_users = User.objects.filter(userprofile__role='ADMIN')
-
-#             # Notify Admin that the specific task is done
-#             for admin in admin_users:
-#                 Notification.objects.create(
-#                     user=admin,
-#                     message=f"Task completed: {task.title} by {task.electrician.name}"
-#                 )
-
-#             # --- NEW: CHECK IF THE ENTIRE JOB IS NOW COMPLETE ---
-#             parent_job = task.job
-#             incomplete_tasks_exist = Task.objects.filter(job=parent_job).exclude(status='Completed').exists()
-            
-#             if not incomplete_tasks_exist:
-#                 # Notify Admins that the whole job is done
-#                 for admin in admin_users:
-#                     Notification.objects.create(
-#                         user=admin,
-#                         message=f"🎉 JOB COMPLETE: All tasks for '{parent_job.title}' are finished!"
-#                     )
-                
-#                 # Notify the Lead Contractor (if they aren't also an admin)
-#                 if parent_job.electrician and parent_job.electrician.user:
-#                     if parent_job.electrician.user not in admin_users:
-#                         Notification.objects.create(
-#                             user=parent_job.electrician.user,
-#                             message=f"🎉 JOB COMPLETE: Your site phase '{parent_job.title}' is fully finished!"
-#                         )
-
-#         # 2. TASK UPDATED/ASSIGNED → ELECTRICIAN
-        
-#         # Fix: Convert both IDs to strings so '5' == '5' evaluates properly
-#         old_elec_str = str(old_electrician) if old_electrician else None
-#         new_elec_str = str(task.electrician_id) if task.electrician_id else None
-
-#         # CASE 1: First time assignment (no old electrician)
-#         if not old_elec_str and new_elec_str and task.electrician:
-#             Notification.objects.create(
-#                 user=task.electrician.user,
-#                 message=f"New task assigned: {task.title}"
-#             )
-
-#         # CASE 2: Electrician changed / Reassigned
-#         elif old_elec_str and new_elec_str and old_elec_str != new_elec_str and task.electrician:
-#             Notification.objects.create(
-#                 user=task.electrician.user,
-#                 message=f"New task assigned to you: {task.title}"
-#             )
-
-#         # CASE 3: Only update (same electrician, e.g., deadline or description changed)
-#         elif old_elec_str == new_elec_str and task.electrician and task.electrician.user:
-#             # We don't want to spam them if they just clicked "Completed" themselves
-#             if new_status != "Completed" or old_status == new_status:
-#                 Notification.objects.create(
-#                     user=task.electrician.user,
-#                     message=f"Task updated: {task.title}"
-#                 )
-
-#         messages.info(request, "Task updated successfully")
-#         return redirect('tasks')
-
-
-#     return render(request, 'edit_task.html', {
-#         'task': task,
-#         'jobs': jobs,
-#         'electricians': electricians
-#     })
 
 @jwt_cookie_required
 def edit_task(request, id):
@@ -769,7 +883,38 @@ def edit_task(request, id):
         task.save()
 
         # ============ NOTIFICATIONS ============
-        # ... (Keep all your existing notification code exactly as it is here) ...
+        # SAVE FIRST
+        task.save()
+
+        # ==========================================
+        # NOTIFICATIONS LOGIC
+        # ==========================================
+        from .models import Notification
+        from django.contrib.auth.models import User
+
+        # 1. Did the Status Change? (Electrician -> Contractor & Admin)
+        if old_status != new_status:
+            # Notify the Contractor assigned to this Job
+            if task.job.assigned_contractor:
+                Notification.objects.create(
+                    user=task.job.assigned_contractor,
+                    message=f"Task Update: '{task.title}' is now {new_status}."
+                )
+            
+            # Notify ALL Admins
+            admins = User.objects.filter(userprofile__role='ADMIN')
+            for admin in admins:
+                Notification.objects.create(
+                    user=admin,
+                    message=f"Task Update: '{task.title}' on job '{task.job.title}' is now {new_status}."
+                )
+
+        # 2. Was the Task reassigned to a NEW Electrician?
+        if str(old_electrician) != str(task.electrician_id) and task.electrician and task.electrician.user:
+            Notification.objects.create(
+                user=task.electrician.user,
+                message=f"You have been reassigned to Task: {task.title}"
+            )
 
         messages.info(request, "Task updated successfully")
         return redirect('tasks')
@@ -805,8 +950,13 @@ def materials_page(request):
         jobs = Job.objects.filter(tasks__electrician__user=request.user).distinct()
         # Only show materials linked to those specific jobs
         materials = Material.objects.filter(job__in=jobs).select_related('job')
+    elif role == 'CONTRACTOR':
+        # Find the jobs this contractor is assigned to
+        jobs = Job.objects.filter(assigned_contractor=request.user)
+        # Only show materials linked to those specific jobs
+        materials = Material.objects.filter(job__in=jobs).select_related('job')
     else:
-        # Admins and Contractors see everything
+        # Admins see everything
         jobs = Job.objects.all()
         materials = Material.objects.select_related('job').all()
 
@@ -844,7 +994,19 @@ def materials_page(request):
 @jwt_cookie_required
 @role_required(['ADMIN', 'CONTRACTOR'])
 def add_material(request):
-    jobs = Job.objects.all()
+
+    role = request.user.userprofile.role
+
+    # 1. ROLE-BASED DATA FETCHING
+    if  role == 'CONTRACTOR':
+        # Find the jobs this contractor is assigned to
+        jobs = Job.objects.filter(assigned_contractor=request.user)
+        # Only show materials linked to those specific jobs
+        # materials = Material.objects.filter(job__in=jobs).select_related('job')
+    else:
+        # Admins see everything
+        jobs = Job.objects.all()
+    # jobs = Job.objects.all()
 
     if request.method == 'POST':
         Material.objects.create(
@@ -862,23 +1024,77 @@ def add_material(request):
     return render(request, 'add_material.html', {'jobs': jobs})
 
 @jwt_cookie_required
-@role_required(['ADMIN', 'CONTRACTOR', 'ELECTRICIAN'])
 def edit_material(request, id):
     material = get_object_or_404(Material, id=id)
-    jobs = Job.objects.all()
+    role = request.user.userprofile.role
+
+    # 1. SECURE THE JOB DROPDOWN
+    if role == 'CONTRACTOR':
+        jobs = Job.objects.filter(assigned_contractor=request.user)
+    else:
+        jobs = Job.objects.all()
 
     if request.method == 'POST':
-        material.name = request.POST['name']
-        material.quantity = request.POST['quantity']
-        material.unit = request.POST['unit']
-        material.used_quantity = request.POST['used_quantity']
-        material.job_id = request.POST['job']
+        # Safely grab the incoming used quantity as an integer
+        try:
+            new_used_qty = int(request.POST['used_quantity'])
+        except ValueError:
+            messages.error(request, "Invalid quantity value provided.")
+            return redirect('edit_material', id=material.id)
+
+        # ==========================================
+        # SECURITY RULES FOR ELECTRICIANS
+        # ==========================================
+        if role == 'ELECTRICIAN':
+            
+            # --- NEW: Task Status Validation ---
+            # Check if this electrician has an "In Progress" task for this material's Job
+            has_active_task = Task.objects.filter(
+                job=material.job, 
+                electrician__user=request.user, 
+                status='In Progress'
+            ).exists()
+
+            if not has_active_task:
+                messages.error(request, "Error: You can only update materials when your task for this job is marked as 'In Progress'.")
+                return redirect('edit_material', id=material.id)
+            # -----------------------------------
+
+            # Rule 1: Cannot decrease previous usage
+            if new_used_qty < material.used_quantity:
+                messages.error(request, f"Error: You cannot decrease usage below {material.used_quantity}. Contact your Contractor to fix errors.")
+                return redirect('edit_material', id=material.id)
+
+            # Rule 2: Cannot exceed total inventory
+            if new_used_qty > material.quantity:
+                messages.error(request, f"Error: Used quantity ({new_used_qty}) cannot exceed total stock ({material.quantity}).")
+                return redirect('edit_material', id=material.id)
+
+            # ONLY update the used_quantity field
+            material.used_quantity = new_used_qty
+
+        # ==========================================
+        # RULES FOR ADMINS & CONTRACTORS
+        # ==========================================
+        else:
+            new_total_qty = int(request.POST['quantity'])
+
+            # Rule: Even Admins shouldn't set used > total
+            if new_used_qty > new_total_qty:
+                messages.error(request, "Error: Used quantity cannot exceed the total quantity.")
+                return redirect('edit_material', id=material.id)
+
+            # Admins & Contractors can update everything
+            material.name = request.POST['name']
+            material.quantity = new_total_qty
+            material.unit = request.POST.get('unit', material.unit) # Fallback to existing if hidden
+            material.used_quantity = new_used_qty
+            material.job_id = request.POST.get('job', material.job_id) # Fallback to existing if hidden
+
+        # Save the changes
         material.save()
-
-        messages.info(request, "Material updated successfully")
+        messages.success(request, "Material updated successfully")
         return redirect('materials')
-
-    
 
     return render(request, 'edit_material.html', {
         'material': material,
@@ -919,17 +1135,60 @@ def profile_page(request):
     })
 
 @jwt_cookie_required
-# @login_required
+@login_required
 def update_profile(request):
     user = request.user
     profile = user.userprofile
 
     if request.method == 'POST':
-        user.username = request.POST.get('username')
-        profile.phone = request.POST.get('phone')
-        user.email = request.POST.get('email')
+        # 1. Grab incoming data before saving
+        new_username = request.POST.get('username')
+        new_phone = request.POST.get('phone')
+        new_email = request.POST.get('email')
 
-        # NEW: Handle profile picture upload
+        # ==========================================
+        # VALIDATION 1: PHONE NUMBER
+        # ==========================================
+        if new_phone:
+            # Check format: exactly 10 digits
+            if not re.match(r'^\d{10}$', new_phone):
+                messages.error(request, "Invalid phone number. It must be exactly 10 digits.")
+                return redirect('update_profile') # Ensure this matches your urls.py name
+            
+            # Check uniqueness in UserProfile (excluding the current user)
+            from .models import UserProfile # Ensure this is imported
+            if UserProfile.objects.filter(phone=new_phone).exclude(user=user).exists():
+                messages.error(request, "This phone number is already registered to another user.")
+                return redirect('update_profile')
+
+        # ==========================================
+        # VALIDATION 2: FINANCIAL DETAILS (ELECTRICIAN ONLY)
+        # ==========================================
+        if profile.role == 'ELECTRICIAN':
+            upi_id = request.POST.get('upi_id')
+            bank_account = request.POST.get('bank_account')
+            ifsc_code = request.POST.get('ifsc_code')
+
+            if upi_id and not re.match(r'^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$', upi_id):
+                messages.error(request, "Invalid UPI ID format. Example: username@bank")
+                return redirect('update_profile')
+
+            if bank_account and not re.match(r'^\d{9,18}$', bank_account):
+                messages.error(request, "Invalid Bank Account. It must contain 9 to 18 numbers only.")
+                return redirect('update_profile')
+
+            if ifsc_code and not re.match(r'^[A-Z]{4}0[A-Z0-9]{6}$', ifsc_code.upper()):
+                messages.error(request, "Invalid IFSC code. It must be 11 characters (e.g., SBIN0001234).")
+                return redirect('update_profile')
+
+        # ==========================================
+        # ALL VALIDATIONS PASSED -> SAVE TO DATABASE
+        # ==========================================
+        user.username = new_username
+        profile.phone = new_phone
+        user.email = new_email
+
+        # Handle profile picture upload
         profile_pic = request.FILES.get('profile_picture')
         if profile_pic:
             profile.profile_picture = profile_pic
@@ -937,19 +1196,20 @@ def update_profile(request):
         user.save()
         profile.save()
 
-        # --- NEW: SAVE FINANCIAL DETAILS ---
+        # SAVE FINANCIAL DETAILS
         if profile.role == 'ELECTRICIAN':
             electrician = Electrician.objects.filter(user=user).first()
             if electrician:
                 electrician.upi_id = request.POST.get('upi_id')
                 electrician.bank_account = request.POST.get('bank_account')
-                electrician.ifsc_code = request.POST.get('ifsc_code')
+                # Save IFSC code as uppercase for database consistency
+                electrician.ifsc_code = request.POST.get('ifsc_code').upper() if request.POST.get('ifsc_code') else None
                 electrician.save()
 
         messages.success(request, "Profile updated successfully")
         return redirect('profile')
 
-    # Fetch to pre-fill the form
+    # Fetch to pre-fill the form (GET request)
     electrician = None
     if profile.role == 'ELECTRICIAN':
         electrician = Electrician.objects.filter(user=user).first()
@@ -963,27 +1223,52 @@ def update_profile(request):
 
 # -------------------- REPORTS --------------------
 @jwt_cookie_required
-@role_required(['ADMIN'])
 def reports_page(request):
-    from django.utils.timezone import now
-    from django.db.models import Count
+    role = request.user.userprofile.role
 
-    today = now().date()
+    # 1. TIMEZONE-SAFE DATE (Ensures late-night tasks log correctly)
+    today = timezone.localtime(timezone.now()).date()
 
-    tasks_today = Task.objects.filter(created_at__date=today)
-    completed_tasks = Task.objects.filter(status='Completed')
+    # ==========================================
+    # 2. SECURE DATA FENCING BY ROLE
+    # ==========================================
+    if role == 'CONTRACTOR':
+        # Fenced queries: Only grab data linked to this specific contractor
+        base_tasks = Task.objects.filter(job__assigned_contractor=request.user)
+        base_jobs = Job.objects.filter(assigned_contractor=request.user)
+        base_materials = Material.objects.filter(job__assigned_contractor=request.user)
+        electricians_count = Electrician.objects.filter(
+            tasks__job__assigned_contractor=request.user
+        ).distinct().count()
+    else:
+        # Admin View: Unrestricted
+        base_tasks = Task.objects.all()
+        base_jobs = Job.objects.all()
+        base_materials = Material.objects.all()
+        electricians_count = Electrician.objects.count()
 
-    activity = Task.objects.values('electrician__name').annotate(count=Count('id'))
+    # ==========================================
+    # 3. REPORT CALCULATIONS (The Bug Fixes)
+    # ==========================================
+    
+    # FIX 1: Use updated_at so it captures ANY work done today!
+    tasks_today = base_tasks.filter(updated_at__date=today)
+    
+    # FIX 2: Order completed tasks by most recent so old ones don't clog the top
+    completed_tasks = base_tasks.filter(status='Completed').order_by('-updated_at')[:10] 
+
+    # Activity breakdown
+    activity = base_tasks.values('electrician__name').annotate(count=Count('id'))
 
     context = {
-        'electricians': Electrician.objects.count(),
-        'jobs': Job.objects.count(),
-        'tasks': Task.objects.count(),
-        'materials': Material.objects.count(),
+        'electricians': electricians_count,
+        'jobs': base_jobs.count(),
+        'tasks': base_tasks.count(),
+        'materials': base_materials.count(),
 
-        'pending': Task.objects.filter(status='Pending').count(),
-        'in_progress': Task.objects.filter(status='In Progress').count(),
-        'completed': Task.objects.filter(status='Completed').count(),
+        'pending': base_tasks.filter(status='Pending').count(),
+        'in_progress': base_tasks.filter(status='In Progress').count(),
+        'completed': base_tasks.filter(status='Completed').count(),
 
         'tasks_today': tasks_today,
         'completed_tasks': completed_tasks,
@@ -1007,6 +1292,7 @@ def view_as_user(request, id):
 
     # Save the original Admin's user ID in the session
     request.session['original_admin_id'] = request.user.id
+    request.session['impersonation_return_url'] = 'electricians'
 
     # Generate a new token for the electrician
     refresh = RefreshToken.for_user(target_user)
@@ -1021,6 +1307,7 @@ def view_as_user(request, id):
         samesite='Lax'
     )
     return response
+
 
 # -------------------- VIEW AS CONTRACTOR --------------------
 @jwt_cookie_required
@@ -1046,6 +1333,7 @@ def view_as_contractor(request, id):
         samesite='Lax'
     )
     return response
+
 
 # -------------------- STOP VIEWING AS --------------------
 @jwt_cookie_required
@@ -1078,6 +1366,8 @@ def stop_viewing_as(request):
     )
     return response
 
+
+# -------------------- SETTLEMENTS & EARNINGS --------------------
 @jwt_cookie_required
 @role_required(['ADMIN'])
 def admin_settlement_dashboard(request):

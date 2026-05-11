@@ -76,145 +76,6 @@
 <div class="d-flex" id="wrapper">
 
     <!-- Sidebar -->
-    <!-- <div id="sidebar-wrapper">
-        <div class="sidebar-heading d-flex align-items-center">
-            <i class="bi bi-lightning-charge-fill text-warning me-2"></i> ECMS
-        </div>
-        
-        <div class="sidebar-nav d-flex flex-column h-80">
-            {% with role=request.user.userprofile.role %}
-            
-            <a href="{% url 'dashboard' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-grid-1x2"></i> Dashboard
-            </a>
-
-            <a href="{% url 'notifications' %}" class="nav-link text-decoration-none d-flex justify-content-between align-items-center">
-                <div><i class="bi bi-bell"></i> Notifications</div>
-                {% if unread_count and unread_count > 0 %}
-                    <span class="badge bg-danger rounded-pill">{{ unread_count }}</span>
-                {% elif notification_count > 0 %}
-                    <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
-                {% endif %}
-            </a>
-
-            <small class="text-uppercase fw-bold mb-2 ms-3" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(164, 202, 241, 0.882); margin-top: 10px;">Management ↓</small>
-
-            {% if role|upper == "ADMIN" %}
-            <a href="{% url 'contractors' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-building"></i> Contractors
-            </a>
-            <a href="{% url 'electricians' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-people"></i> Electricians
-            </a>
-            {% endif %}
-
-            {% if role|upper == "ADMIN" or role|upper == "CONTRACTOR" %}
-            <a href="{% url 'jobs' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-briefcase"></i> Jobs
-            </a>
-            <a href="{% url 'materials' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-box-seam"></i> Inventory
-            </a>
-            {% endif %}
-
-            <a href="{% url 'tasks' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-list-check"></i> Tasks
-            </a>
-
-            {% if role|upper == "ADMIN" %}
-            <a href="{% url 'reports' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-graph-up"></i> Reports
-            </a>
-
-            {% endif %}
-
-            <div class="pt-4 border-top border-secondary border-opacity-25">
-                <a href="{% url 'profile' %}" class="nav-link text-decoration-none">
-                    <i class="bi bi-person-circle"></i> Profile Settings
-                </a>
-                <a href="{% url 'logout' %}" class="nav-link text-decoration-none text-danger mt-1 hover-danger">
-                    <i class="bi bi-box-arrow-right"></i> Sign Out
-                </a>
-            </div>
-
-            {% endwith %}
-        </div>
-    </div> -->
-
-    <!-- <div id="sidebar-wrapper">
-        <div class="sidebar-heading d-flex align-items-center">
-            <i class="bi bi-lightning-charge-fill text-warning me-2"></i> ECMS
-        </div>
-        
-        <div class="sidebar-nav d-flex flex-column h-80">
-            {% with role=request.user.userprofile.role %}
-            
-            <a href="{% url 'dashboard' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-grid-1x2"></i> Dashboard
-            </a>
-
-            <a href="{% url 'notifications' %}" class="nav-link text-decoration-none d-flex justify-content-between align-items-center">
-                <div><i class="bi bi-bell"></i> Notifications</div>
-                {% if unread_count and unread_count > 0 %}
-                    <span class="badge bg-danger rounded-pill">{{ unread_count }}</span>
-                {% elif notification_count > 0 %}
-                    <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
-                {% endif %}
-            </a>
-
-            <small class="text-uppercase fw-bold mb-2 ms-3" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(164, 202, 241, 0.882); margin-top: 10px;">Management ↓</small>
-
-            {% if role|upper == "ADMIN" %}
-            <a href="{% url 'contractors' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-building"></i> Contractors
-            </a>
-            <a href="{% url 'electricians' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-people"></i> Electricians
-            </a>
-            {% endif %}
-
-            {% if role|upper == "ADMIN" or role|upper == "CONTRACTOR" %}
-            <a href="{% url 'jobs' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-briefcase"></i> Jobs
-            </a>
-            <a href="{% url 'materials' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-box-seam"></i> Inventory
-            </a>
-            {% endif %}
-
-            <a href="{% url 'tasks' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-list-check"></i> Tasks
-            </a>
-
-            {% if role|upper == "ADMIN" %}
-            <a href="{% url 'reports' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-graph-up"></i> Reports
-            </a>
-            <a href="{% url 'admin_settlement_dashboard' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-cash-stack"></i> Settlements
-            </a>
-            {% endif %}
-
-            {% if role|upper == "ELECTRICIAN" %}
-            <small class="text-uppercase fw-bold mb-2 ms-3" style="font-size: 0.7rem; letter-spacing: 1px; color: rgba(164, 202, 241, 0.882); margin-top: 10px;">Financials ↓</small>
-            <a href="{% url 'electrician_earnings' %}" class="nav-link text-decoration-none">
-                <i class="bi bi-wallet2"></i> My Earnings
-            </a>
-            {% endif %}
-
-            <div class="pt-4 border-top border-secondary border-opacity-25 mt-3">
-                <a href="{% url 'profile' %}" class="nav-link text-decoration-none">
-                    <i class="bi bi-person-circle"></i> Profile Settings
-                </a>
-                <a href="{% url 'logout' %}" class="nav-link text-decoration-none text-danger mt-1 hover-danger">
-                    <i class="bi bi-box-arrow-right"></i> Sign Out
-                </a>
-            </div>
-
-            {% endwith %}
-        </div>
-    </div> -->
-
     <div id="sidebar-wrapper" class="d-flex flex-column" style="height: 100vh; background-color: #1a1f36;">
         
         <div class="sidebar-heading d-flex align-items-center py-4 px-4 text-white fw-bold fs-4 border-bottom border-secondary border-opacity-25">
@@ -243,12 +104,12 @@
             <a href="{% url 'contractors' %}" class="sidebar-link text-decoration-none {% if 'contractors' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-building me-2"></i> Contractors
             </a>
-            <a href="{% url 'electricians' %}" class="sidebar-link text-decoration-none {% if 'electricians' in request.resolver_match.url_name %}active{% endif %}">
-                <i class="bi bi-people me-2"></i> Electricians
-            </a>
             {% endif %}
 
             {% if role|upper == "ADMIN" or role|upper == "CONTRACTOR" %}
+            <a href="{% url 'electricians' %}" class="sidebar-link text-decoration-none {% if 'electricians' in request.resolver_match.url_name %}active{% endif %}">
+                <i class="bi bi-people me-2"></i> Electricians
+            </a>
             <a href="{% url 'jobs' %}" class="sidebar-link text-decoration-none {% if 'jobs' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-briefcase me-2"></i> Jobs
             </a>
@@ -264,10 +125,15 @@
 
             {% if role|upper == "ADMIN" %}
             <div class="sidebar-heading-label text-uppercase fw-bold">Analytics & Finance</div>
-            
+            {% elif role|upper == "CONTRACTOR" %}
+            <div class="sidebar-heading-label text-uppercase fw-bold">Analytics</div>
+            {% endif %}
+            {% if role|upper == "ADMIN" or role|upper == "CONTRACTOR" %}
             <a href="{% url 'reports' %}" class="sidebar-link text-decoration-none {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-graph-up me-2"></i> Reports
             </a>
+            {% endif %}
+            {% if role|upper == "ADMIN" %}
             <a href="{% url 'admin_settlement_dashboard' %}" class="sidebar-link text-decoration-none {% if 'settlement' in request.resolver_match.url_name %}active{% endif %}">
                 <i class="bi bi-cash-stack me-2"></i> Settlements
             </a>
@@ -295,6 +161,19 @@
     </div>
 
     <!-- Page Content -->
+    {% if messages %}
+    <div id="alert-box" style="position: fixed; top: 80px; right: 20px; width: 320px; z-index: 9999;">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %} d-flex align-items-center justify-content-between shadow-sm mb-2 rounded-3 border-0">
+            <div>
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-exclamation-circle-fill{% else %}bi-info-circle-fill{% endif %} me-2"></i>
+                {{ message }}
+            </div>
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     <div id="page-content-wrapper" class="w-100 flex-grow-1 d-flex flex-column">
         <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4 py-3">
             <div class="d-flex align-items-center justify-content-between w-100">
@@ -328,6 +207,11 @@
                         <li>
                             <a class="dropdown-item py-2 d-flex align-items-center" href="{% url 'profile' %}">
                                 <i class="bi bi-person-circle text-muted me-2 fs-5"></i> Profile Settings
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'change_password' %}" class="dropdown-item py-2 d-flex align-items-center">
+                                <i class="bi bi-lock-fill me-2 fs-5"></i> Change Password
                             </a>
                         </li>
                         <li><hr class="dropdown-divider opacity-25"></li>
@@ -384,6 +268,16 @@
             }
         }
     });
+</script>
+<script>
+setTimeout(() => {
+    let alertBox = document.getElementById("alert-box");
+    if (alertBox) {
+        alertBox.style.transition = "opacity 0.5s ease";
+        alertBox.style.opacity = "0";
+        setTimeout(() => alertBox.remove(), 500);
+    }
+}, 5000);
 </script>
 </body>
 </html>
