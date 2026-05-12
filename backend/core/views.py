@@ -838,6 +838,93 @@ def add_task(request):
         'electricians': electricians
     })
 
+# @jwt_cookie_required
+# def edit_task(request, id):
+#     task = get_object_or_404(Task, id=id)
+#     jobs = Job.objects.all()
+#     electricians = Electrician.objects.all()
+
+#     if request.method == 'POST':
+#         # STORE OLD VALUES FIRST
+#         old_status = task.status
+#         new_status = request.POST.get('status')
+#         old_electrician = task.electrician_id
+
+#         # Fetch the selected Job instance
+#         job_id = request.POST['job']
+#         job_instance = get_object_or_404(Job, id=job_id)
+
+#         # SAFE DEADLINE & VALIDATION
+#         deadline = request.POST.get('deadline')
+#         if deadline:
+#             dt = parse_datetime(deadline)
+#             aware_deadline = make_aware(dt)
+            
+#             # --- NEW: Check if Task Deadline exceeds Job Deadline ---
+#             if aware_deadline.date() > job_instance.deadline:
+#                 messages.error(request, f"Error: Task deadline cannot exceed the main Job deadline ({job_instance.deadline.strftime('%d-%b-%Y')}).")
+#                 return redirect('edit_task', id=task.id)
+            
+#             task.deadline = aware_deadline
+
+#         # UPDATE FIELDS
+#         task.title = request.POST['title']
+#         task.description = request.POST['description']
+#         task.job_id = job_id
+#         task.electrician_id = request.POST.get('electrician') or None
+#         task.status = new_status
+
+#         # Grab the file if it was uploaded
+#         report = request.FILES.get('report_file')
+#         if report:
+#             task.report_file = report
+
+#         # SAVE FIRST
+#         task.save()
+
+#         # ============ NOTIFICATIONS ============
+#         # SAVE FIRST
+#         task.save()
+
+#         # ==========================================
+#         # NOTIFICATIONS LOGIC
+#         # ==========================================
+#         from .models import Notification
+#         from django.contrib.auth.models import User
+
+#         # 1. Did the Status Change? (Electrician -> Contractor & Admin)
+#         if old_status != new_status:
+#             # Notify the Contractor assigned to this Job
+#             if task.job.assigned_contractor:
+#                 Notification.objects.create(
+#                     user=task.job.assigned_contractor,
+#                     message=f"Task Update: '{task.title}' is now {new_status}."
+#                 )
+            
+#             # Notify ALL Admins
+#             admins = User.objects.filter(userprofile__role='ADMIN')
+#             for admin in admins:
+#                 Notification.objects.create(
+#                     user=admin,
+#                     message=f"Task Update: '{task.title}' on job '{task.job.title}' is now {new_status}."
+#                 )
+
+#         # 2. Was the Task reassigned to a NEW Electrician?
+#         if str(old_electrician) != str(task.electrician_id) and task.electrician and task.electrician.user:
+#             Notification.objects.create(
+#                 user=task.electrician.user,
+#                 message=f"You have been reassigned to Task: {task.title}"
+#             )
+
+#         messages.info(request, "Task updated successfully")
+#         return redirect('tasks')
+
+#     return render(request, 'edit_task.html', {
+#         'task': task,
+#         'jobs': jobs,
+#         'electricians': electricians
+#     })
+
 @jwt_cookie_required
 def edit_task(request, id):
     task = get_object_or_404(Task, id=id)
@@ -879,12 +966,22 @@ def edit_task(request, id):
         if report:
             task.report_file = report
 
-        # SAVE FIRST
+        # SAVE ONCE
         task.save()
 
-        # ============ NOTIFICATIONS ============
-        # SAVE FIRST
-        task.save()
+        # ==========================================
+        # PAYMENT GENERATION LOGIC
+        # ==========================================
+        from .models import TaskPayment # Ensure TaskPayment is imported
+        
+        # If the task was just marked as Completed, generate a Pending Payment
+        if old_status != 'Completed' and new_status == 'Completed':
+            if task.electrician and task.electrician.user:
+                TaskPayment.objects.get_or_create(
+                    task=task,
+                    electrician=task.electrician.user,
+                    defaults={'status': 'PENDING'}
+                )
 
         # ==========================================
         # NOTIFICATIONS LOGIC
